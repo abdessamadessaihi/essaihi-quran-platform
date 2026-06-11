@@ -1,0 +1,288 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+// ── Controllers ──────────────────────────────────────────
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\KhatmaController;
+use App\Http\Controllers\JuzAllocationController;
+use App\Http\Controllers\DailyWardController;
+use App\Http\Controllers\MemorizationController;
+use App\Http\Controllers\RevisionController;
+use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminFamilyController;
+
+// ════════════════════════════════════════════════════════
+// الصفحة الرئيسية العامة
+// ════════════════════════════════════════════════════════
+Route::get('/', fn() => view('welcome'))->name('home');
+
+// ════════════════════════════════════════════════════════
+// المنطقة المحمية
+// ════════════════════════════════════════════════════════
+Route::middleware(['auth', 'verified', 'active_member'])
+     ->group(function () {
+
+    // ── لوحة التحكم ──────────────────────────────────
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+         ->name('dashboard');
+
+    // ════════════════════════════════════════════════
+    // العائلات
+    // ════════════════════════════════════════════════
+    Route::prefix('families')->name('families.')->group(function () {
+
+        Route::get('/',    [FamilyController::class, 'index'])
+             ->name('index');
+
+        Route::get('/create', [FamilyController::class, 'create'])
+             ->name('create');
+
+        Route::post('/', [FamilyController::class, 'store'])
+             ->name('store');
+
+        Route::get('/{family}', [FamilyController::class, 'show'])
+             ->name('show');
+
+        Route::get('/{family}/edit', [FamilyController::class, 'edit'])
+             ->name('edit')
+             ->middleware('family_admin');
+
+        Route::patch('/{family}', [FamilyController::class, 'update'])
+             ->name('update')
+             ->middleware('family_admin');
+
+        Route::post('/{family}/join', [FamilyController::class, 'join'])
+             ->name('join');
+
+        // ── إدارة الأعضاء ───────────────────────────
+        Route::post('/{family}/members/{member}/approve',
+            [FamilyController::class, 'approveMember']
+        )->name('members.approve')->middleware('family_admin');
+
+        Route::post('/{family}/members/{member}/reject',
+            [FamilyController::class, 'rejectMember']
+        )->name('members.reject')->middleware('family_admin');
+
+        Route::post('/{family}/members/{member}/promote',
+            [FamilyController::class, 'promoteToAdmin']
+        )->name('members.promote')->middleware('family_admin');
+
+        Route::post('/{family}/members/{member}/demote',
+            [FamilyController::class, 'demoteToMember']
+        )->name('members.demote')->middleware('family_admin');
+
+        Route::post('/{family}/members/{member}/suspend',
+            [FamilyController::class, 'suspendMember']
+        )->name('members.suspend')->middleware('family_admin');
+
+        Route::post('/{family}/members/{member}/reactivate',
+            [FamilyController::class, 'reactivateMember']
+        )->name('members.reactivate')->middleware('family_admin');
+
+        Route::delete('/{family}/members/{member}',
+            [FamilyController::class, 'removeMember']
+        )->name('members.remove')->middleware('family_admin');
+    });
+
+    // ════════════════════════════════════════════════
+    // الختمات
+    // ════════════════════════════════════════════════
+    Route::prefix('khatmas')->name('khatmas.')->group(function () {
+
+        Route::get('/', [KhatmaController::class, 'index'])
+             ->name('index');
+
+        Route::get('/create', [KhatmaController::class, 'create'])
+             ->name('create');
+
+        Route::post('/', [KhatmaController::class, 'store'])
+             ->name('store');
+
+        Route::get('/{khatma}', [KhatmaController::class, 'show'])
+             ->name('show');
+
+        Route::get('/{khatma}/edit', [KhatmaController::class, 'edit'])
+             ->name('edit');
+
+        Route::patch('/{khatma}', [KhatmaController::class, 'update'])
+             ->name('update');
+
+        Route::delete('/{khatma}', [KhatmaController::class, 'destroy'])
+             ->name('destroy');
+
+        // ── أجزاء الختمة ──────────────────────────
+        Route::post(
+            '/{khatma}/juz/{juz}/claim',
+            [JuzAllocationController::class, 'claim']
+        )->name('juz.claim');
+
+        Route::post(
+            '/{khatma}/juz/{juz}/start',
+            [JuzAllocationController::class, 'start']
+        )->name('juz.start');
+
+        Route::post(
+            '/{khatma}/juz/{juz}/complete',
+            [JuzAllocationController::class, 'complete']
+        )->name('juz.complete');
+    });
+
+    // ════════════════════════════════════════════════
+    // الورد اليومي
+    // ════════════════════════════════════════════════
+    Route::prefix('ward')->name('ward.')->group(function () {
+
+        Route::get('/', [DailyWardController::class, 'index'])
+             ->name('index');
+
+        Route::post('/', [DailyWardController::class, 'store'])
+             ->name('store');
+
+        Route::post('/complete', [DailyWardController::class, 'complete'])
+             ->name('complete');
+
+        Route::patch('/{ward}', [DailyWardController::class, 'update'])
+             ->name('update');
+
+        Route::delete('/{ward}', [DailyWardController::class, 'destroy'])
+             ->name('destroy');
+    });
+
+    // ════════════════════════════════════════════════
+    // الحفظ
+    // ════════════════════════════════════════════════
+    Route::prefix('memorizations')->name('memorizations.')->group(function () {
+
+        Route::get('/', [MemorizationController::class, 'index'])
+             ->name('index');
+
+        Route::get('/create', [MemorizationController::class, 'create'])
+             ->name('create');
+
+        Route::post('/', [MemorizationController::class, 'store'])
+             ->name('store');
+
+        Route::get('/{memorization}/edit',
+             [MemorizationController::class, 'edit'])
+             ->name('edit');
+
+        Route::patch('/{memorization}',
+             [MemorizationController::class, 'update'])
+             ->name('update');
+
+        Route::delete('/{memorization}',
+             [MemorizationController::class, 'destroy'])
+             ->name('destroy');
+    });
+
+    // ════════════════════════════════════════════════
+    // المراجعة
+    // ════════════════════════════════════════════════
+    Route::prefix('revisions')->name('revisions.')->group(function () {
+
+        Route::get('/', [RevisionController::class, 'index'])
+             ->name('index');
+
+        Route::post('/{revision}/complete',
+             [RevisionController::class, 'complete'])
+             ->name('complete');
+
+        Route::post('/{revision}/skip',
+             [RevisionController::class, 'skip'])
+             ->name('skip');
+    });
+
+    // ════════════════════════════════════════════════
+    // لوحة الشرف
+    // ════════════════════════════════════════════════
+    Route::get('/leaderboard', [LeaderboardController::class, 'index'])
+         ->name('leaderboard');
+
+    // ════════════════════════════════════════════════
+    // الإشعارات
+    // ════════════════════════════════════════════════
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+
+        Route::get('/', [NotificationController::class, 'index'])
+             ->name('index');
+
+        Route::post('/{notification}/read',
+             [NotificationController::class, 'markRead'])
+             ->name('read');
+
+        Route::post('/read-all',
+             [NotificationController::class, 'markAllRead'])
+             ->name('read-all');
+
+        Route::delete('/{notification}',
+             [NotificationController::class, 'destroy'])
+             ->name('destroy');
+    });
+
+    // ════════════════════════════════════════════════
+    // الإشارات المرجعية
+    // ════════════════════════════════════════════════
+    Route::prefix('bookmarks')->name('bookmarks.')->group(function () {
+
+        Route::get('/', [BookmarkController::class, 'index'])
+             ->name('index');
+
+        Route::post('/', [BookmarkController::class, 'store'])
+             ->name('store');
+
+        Route::delete('/{bookmark}', [BookmarkController::class, 'destroy'])
+             ->name('destroy');
+    });
+
+    // ════════════════════════════════════════════════
+    // لوحة الإدارة — للمدير العام فقط
+    // ════════════════════════════════════════════════
+    Route::prefix('admin')->name('admin.')
+         ->middleware('super_admin')
+         ->group(function () {
+
+        Route::get('/dashboard',
+             [AdminDashboardController::class, 'index'])
+             ->name('dashboard');
+
+        // المستخدمون
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/',         [AdminUserController::class, 'index'])
+                 ->name('index');
+            Route::get('/{user}',   [AdminUserController::class, 'show'])
+                 ->name('show');
+            Route::get('/{user}/edit', [AdminUserController::class, 'edit'])
+                 ->name('edit');
+            Route::patch('/{user}', [AdminUserController::class, 'update'])
+                 ->name('update');
+            Route::delete('/{user}',[AdminUserController::class, 'destroy'])
+                 ->name('destroy');
+        });
+
+        // العائلات
+        Route::prefix('families')->name('families.')->group(function () {
+            Route::get('/',         [AdminFamilyController::class, 'index'])
+                 ->name('index');
+            Route::get('/{family}', [AdminFamilyController::class, 'show'])
+                 ->name('show');
+            Route::patch('/{family}',[AdminFamilyController::class,'update'])
+                 ->name('update');
+            Route::delete('/{family}',[AdminFamilyController::class,'destroy'])
+                 ->name('destroy');
+            Route::post('/{family}/members/{member}/remove',[AdminFamilyController::class, 'removeMember'])
+                ->name('members.remove')->middleware('family_admin');
+        });
+    });
+
+});
+
+// ════════════════════════════════════════════════════════
+// Auth Routes (Breeze)
+// ════════════════════════════════════════════════════════
+require __DIR__.'/auth.php';
