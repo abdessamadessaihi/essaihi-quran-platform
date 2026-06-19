@@ -21,6 +21,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\MushafController;
 use App\Http\Controllers\TilawatController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\QuranClassController;
 
 Route::prefix('admin')->name('admin.')
      ->middleware('super_admin')
@@ -262,6 +263,10 @@ Route::middleware(['auth', 'verified', 'active_member'])
          Route::get('/stream-file', [MushafController::class, 'streamMoshaf'])->name('stream');
          Route::post('/save-page', [MushafController::class, 'savePage'])->name('save-page');
     });
+    Route::middleware(['auth', 'verified'])->group(function () {
+    
+    
+});
 
     // ════════════════════════════════════════════════
     // المراجعة
@@ -321,6 +326,14 @@ Route::middleware(['auth', 'verified', 'active_member'])
         Route::delete('/{bookmark}', [BookmarkController::class, 'destroy'])
              ->name('destroy');
     });
+    Route::resource('quran-classes', QuranClassController::class)->except(['create', 'edit']);
+     Route::post('/quran-classes/{quranClass}/request', [QuranClassController::class, 'sendRequest'])->name('quran-classes.request');
+     Route::post('/notifications/{notification}/accept-class', [QuranClassController::class, 'acceptRequest'])->name('notifications.accept-class');
+     Route::post('/notifications/{notification}/reject-class', [QuranClassController::class, 'rejectRequest'])->name('notifications.reject-class');
+     Route::delete('/quran-classes/{quranClass}/remove-file', [QuranClassController::class, 'removeFile'])->name('quran-classes.remove-file');
+     Route::delete('/quran-classes/{quranClass}/remove-student/{student}', [QuranClassController::class, 'removeStudent'])->name('quran-classes.remove-student');
+     Route::post('/quran-classes/{quranClass}/leave', [QuranClassController::class, 'leaveClass'])->name('quran-classes.leave');
+     });
 
     // ════════════════════════════════════════════════
     // لوحة الإدارة — للمدير العام فقط
@@ -351,7 +364,9 @@ Route::middleware(['auth', 'verified', 'active_member'])
              Route::post('/{family}/members/{member}/remove', [AdminFamilyController::class, 'removeMember'])->name('members.remove');
         });
     });
-});
+
+
+   
 
 // ════════════════════════════════════════════════════════
 // Auth Routes (Breeze)

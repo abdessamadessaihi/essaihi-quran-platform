@@ -43,12 +43,29 @@
                           ? 'background:rgba(16,185,129,.2);color:#6ee7b7'
                           : 'background:rgba(239,68,68,.2);color:#fca5a5' }}">
             {{ $user->is_active ? '✅ نشط' : '⛔ موقوف' }}
-          </span>
-          <span style="font-size:11.5px;padding:3px 12px;border-radius:100px;
-                       background:rgba(245,158,11,.2);color:#fcd34d;font-weight:700">
-            {{ $user->isSuperAdmin() ? '🌟 مدير عام'
-               : ($user->isFamilyAdmin() ? '👑 مسؤول' : '📖 عضو') }}
-          </span>
+         <div style="display:flex;gap:8px;flex-wrap:wrap">
+  {{-- البادج الأساسي للدور الحالي --}}
+  <span style="font-size:11.5px;padding:3px 12px;border-radius:100px;background:rgba(245,158,11,.2);color:#fcd34d;font-weight:700">
+    {{ $user->isSuperAdmin() ? '🌟 مدير عام' : 
+       ($user->role === 'mohafid' ? '🕌 محفظ قرآن' : 
+       ($user->role === 'family_admin' ? '👑 مسؤول عائلة' : 
+       ($user->role === 'student' ? '📖 طالب تحفيظ' : '📖 عضو منضم'))) }}
+  </span>
+
+  {{-- بادج إضافي يظهر تلقائياً إذا تم تعيين هذا المستخدم كمحفظ لحلقة بواسطة المدير العام --}}
+  @if(\App\Models\QuranClass::where('mohafid_id', $user->id)->exists())
+    <span style="font-size:11.5px;padding:3px 12px;border-radius:100px;background:rgba(16,185,129,.2);color:#34d399;font-weight:700">
+      🕌 محفظ معتمد لحلقة قائمة
+    </span>
+  @endif
+
+  {{-- بادج إضافي يظهر إذا كان مشتركاً كطالب في حلقات أخرى --}}
+  @if($user->enrolledClasses()->exists())
+    <span style="font-size:11.5px;padding:3px 12px;border-radius:100px;background:rgba(37,99,235,.2);color:#60a5fa;font-weight:700">
+      📖 طالب مشترك في حلقة
+    </span>
+  @endif
+</div>
         </div>
       </div>
     </div>
@@ -98,10 +115,12 @@
                       style="width:100%;padding:11px 13px;border:1.5px solid var(--border);
                              border-radius:10px;font-family:'Tajawal',sans-serif;
                              font-size:13.5px;color:var(--text);background:var(--bg)">
-                <option value="member"       @selected($user->role==='member')>عضو</option>
-                <option value="family_admin" @selected($user->role==='family_admin')>مسؤول عائلة</option>
-                <option value="super_admin"  @selected($user->role==='super_admin')>مدير عام</option>
-              </select>
+            <option value="member"       @selected($user->role==='member')>عضو</option>
+            <option value="student"      @selected($user->role==='student')>طالب تحفيظ 📖</option>
+            <option value="mohafid"      @selected($user->role==='mohafid')>محفظ قرآن 🕌</option>
+            <option value="family_admin" @selected($user->role==='family_admin')>مسؤول عائلة</option>
+            <option value="super_admin"  @selected($user->role==='super_admin')>مدير عام</option>
+    </select>
             </div>
           </div>
           <div style="display:flex;gap:10px">

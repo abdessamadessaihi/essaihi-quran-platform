@@ -348,6 +348,8 @@ body{
       <div class="sidebar-user-role">
         @if(auth()->user()->isSuperAdmin()) المدير العام
         @elseif(auth()->user()->isFamilyAdmin())  مسؤول العائلة
+        @elseif(auth()->user()->isMohafid())  المحفظ الفاضل
+        @elseif(auth()->user()->isStudent())  طالب علم
         @else  عضو العائلة
         @endif
       </div>
@@ -385,7 +387,6 @@ body{
       المصحف المحمدي الشريف
     </a>
 
-    {{-- 🌟 تم إضافة زر "التلاوات الخاشعة" هنا تحت قسم القرآن الكريم 🌟 --}}
     <a href="{{ route('tilawats.index') }}"
        class="sidebar-item {{ request()->routeIs('tilawats.*') ? 'active' : '' }}">
       <img src="{{ asset('images/tilawat.png') }}" alt="" style="width:30px;height:30px;object-fit:contain">
@@ -418,6 +419,13 @@ body{
     </a>
 
     <div class="sidebar-section-label">المجتمع</div>
+
+    {{-- 🌟 تم إضافة زر "حلقات المقارئ والتجويد" هنا بنجاح مع تفعيل الـ Active Class 🌟 --}}
+    <a href="{{ route('quran-classes.index') }}"
+       class="sidebar-item {{ request()->routeIs('quran-classes.*') ? 'active' : '' }}">
+      <div style="font-size:22px; width:30px; text-align:center; flex-shrink:0;">🏫</div>
+      حلقات التجويد والتحفيظ
+    </a>
 
     <a href="{{ route('leaderboard') }}"
        class="sidebar-item {{ request()->routeIs('leaderboard') ? 'active' : '' }}">
@@ -452,6 +460,11 @@ body{
       <div class="sidebar-item-icon">🏘️</div>
       إدارة العائلات
     </a>
+    <a href="{{ route('quran-classes.index') }}" 
+       class="sidebar-item {{ request()->routeIs('quran-classes.*') ? 'active' : '' }}">
+      <div style="font-size:22px; width:30px; text-align:center; flex-shrink:0;">🏫</div>
+      إدارة حلقات التحفيظ
+    </a>
     @endif
 
   </nav>
@@ -473,13 +486,12 @@ body{
   </div>
 </aside>
 
-{{-- ✅ FIX 2: Overlay — utiliser active au lieu de show --}}
+{{-- Overlay --}}
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 {{-- ═══ TOPBAR ═══ --}}
 <header class="topbar" id="topbar">
 
-  {{-- ✅ FIX 3: Bouton toggle unifié et propre --}}
   <button class="topbar-toggle" id="sidebarToggle" aria-label="فتح/إغلاق القائمة">
     <svg width="18" height="18" fill="none" stroke="currentColor"
          stroke-width="2" viewBox="0 0 24 24">
@@ -585,7 +597,6 @@ body{
   </div>
 </div>
 
-{{-- ✅ FIX 4: Script JS unifié pour gérer la sidebar correctement --}}
 <script>
 (function () {
   var sidebar    = document.getElementById('sidebar');
@@ -596,7 +607,6 @@ body{
 
   var isMobile = function () { return window.innerWidth < 1024; };
 
-  // ── Ouvrir la sidebar ──────────────────────────────────
   function openSidebar() {
     sidebar.classList.add('is-open');
     if (isMobile()) {
@@ -607,7 +617,6 @@ body{
     }
   }
 
-  // ── Fermer la sidebar ──────────────────────────────────
   function closeSidebar() {
     sidebar.classList.remove('is-open');
     overlay.classList.remove('active');
@@ -617,7 +626,6 @@ body{
     }
   }
 
-  // ── Toggle ─────────────────────────────────────────────
   function toggleSidebar() {
     if (sidebar.classList.contains('is-open')) {
       if (!isMobile()) {
@@ -635,20 +643,14 @@ body{
     }
   }
 
-  // ── Initialisation ─────────────────────────────────────
   if (!isMobile()) {
     topbar.style.right  = 'var(--sidebar-w)';
     mainWrap.style.marginRight = 'var(--sidebar-w)';
   }
 
-  // ── Bouton toggle ──────────────────────────────────────
   toggleBtn.addEventListener('click', toggleSidebar);
-
-  // ── Overlay click = fermer ─────────────────────────────
   overlay.addEventListener('click', closeSidebar);
 
-  // ── ✅ FONCTIONNALITÉ PRINCIPALE:
-  //    Fermer automatiquement sur mobile quand on clique un lien ──
   document.querySelectorAll('#sidebarNav a.sidebar-item').forEach(function (link) {
     link.addEventListener('click', function () {
       if (isMobile()) {
@@ -657,7 +659,6 @@ body{
     });
   });
 
-  // ── Redimensionnement ──────────────────────────────────
   window.addEventListener('resize', function () {
     if (!isMobile()) {
       overlay.classList.remove('active');

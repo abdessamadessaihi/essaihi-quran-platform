@@ -17,6 +17,9 @@ class User extends Authenticatable
     const ROLE_SUPER_ADMIN  = 'super_admin';
     const ROLE_FAMILY_ADMIN = 'family_admin';
     const ROLE_MEMBER       = 'member';
+    // الأدوار الجديدة الخاصة بصفحة الحصص والمقارئ
+    const ROLE_MOHAFID      = 'mohafid';
+    const ROLE_STUDENT      = 'student';
 
     protected $fillable = [
         'name',
@@ -27,6 +30,7 @@ class User extends Authenticatable
         'role',
         'locale',
         'is_active',
+        'mushaf_page', // حقل حفظ صفحة المصحف الذي أضفناه سابقاً
     ];
 
     protected $hidden = [
@@ -53,13 +57,39 @@ class User extends Authenticatable
     {
         return $this->role === self::ROLE_FAMILY_ADMIN;
     }
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
 
     public function isMember(): bool
     {
         return $this->role === self::ROLE_MEMBER;
     }
 
+    public function isMohafid(): bool
+    {
+        return $this->role === self::ROLE_MOHAFID;
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->role === self::ROLE_STUDENT;
+    }
+
     // ─── Relations ────────────────────────────────────────
+
+    /** الفصول والقرى القرآنية التي يدرّسها المحفظ */
+    public function managedClasses(): HasMany
+    {
+        return $this->hasMany(QuranClass::class, 'mohafid_id');
+    }
+
+    /** الفصول القرآنية التي يدرس بها الطالب */
+    public function enrolledClasses(): BelongsToMany
+    {
+        return $this->belongsToMany(QuranClass::class, 'class_student', 'student_id', 'quran_class_id');
+    }
 
     /** العائلات التي أنشأها هذا المستخدم */
     public function createdFamilies(): HasMany

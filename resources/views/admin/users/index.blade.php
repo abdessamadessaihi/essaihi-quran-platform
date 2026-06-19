@@ -73,10 +73,12 @@
                      border-radius:10px;font-family:'Tajawal',sans-serif;
                      font-size:13.5px;color:var(--text);background:var(--bg)">
         <option value="">الكل</option>
-        <option value="super_admin" @selected($role==='super_admin')>مدير عام</option>
-        <option value="family_admin" @selected($role==='family_admin')>مسؤول عائلة</option>
-        <option value="member" @selected($role==='member')>عضو</option>
-      </select>
+        <option value="super_admin"  @selected($role==='super_admin')>المدير العام</option>
+  <option value="mohafid"      @selected($role==='mohafid')> محفظ</option>
+  <option value="student"      @selected($role==='student')>طالب </option>
+  <option value="family_admin" @selected($role==='family_admin')>مسؤول عائلة</option>
+  <option value="member"       @selected($role==='member')>عضو</option>
+</select>
     </div>
     <div class="filter-field-sub" style="min-width:120px">
       <label style="display:block;font-size:12.5px;font-weight:600;
@@ -153,15 +155,16 @@
 
           {{-- الدور --}}
           <td style="padding:14px 16px;white-space:nowrap">
-            <span style="font-size:11.5px;padding:3px 10px;border-radius:100px;
-                         font-weight:700;
-                         {{ $u->isSuperAdmin()
-                            ? 'background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff'
-                            : ($u->isFamilyAdmin()
-                               ? 'background:#fffbeb;color:#92400e;border:1px solid #fde68a'
-                               : 'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0') }}">
-              {{ $u->isSuperAdmin() ? '🌟 مدير عام'
-                 : ($u->isFamilyAdmin() ? '👑 مسؤول عائلة' : '📖 عضو') }}
+            <span style="font-size:11.5px;padding:3px 10px;border-radius:100px;font-weight:700;
+             {{ $u->isSuperAdmin() ? 'background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff' : 
+                ($u->isMohafid() ? 'background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0' : 
+                ($u->role==='student' ? 'background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe' : 
+                ($u->isFamilyAdmin() ? 'background:#fffbeb;color:#92400e;border:1px solid #fde68a' : 
+                'background:#f9fafb;color:#374151;border:1px solid #e5e7eb'))) }}">
+  {{ $u->isSuperAdmin() ? '🌟 مدير عام' : 
+     ($u->isMohafid() ? '🕌 محفظ' : 
+     ($u->role==='student' ? '📖 طالب' :
+     ($u->isFamilyAdmin() ? '👑 مسؤول عائلة' : '📖 عضو'))) }}
             </span>
           </td>
 

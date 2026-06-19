@@ -316,4 +316,55 @@ class NotificationService
             );
         }
     }
+    /**
+     * إشعار عند طلب انضمام طالب لحلقة قرآنية
+     */
+    public static function onQuranClassRequest(array $quranClass, \App\Models\User $student): void
+    {
+        // نرسل الإشعار للمحفّظ المشرف على هذه الحلقة
+        self::create(
+            $quranClass['mohafid_id'],
+            'NewClassRequest',
+            '🏫 طلب انضمام لحلقتك القرآنية',
+            "يرغب الطالب {$student->name} في الانضمام إلى حلقتك: \"{$quranClass['title']}\".",
+            '📥',
+            [
+                'quran_class_id' => $quranClass['id'],
+                'student_id'     => $student->id,
+                'student_name'   => $student->name,
+                'student_phone'  => $student->phone ?? 'لا يوجد رقم هاتف',
+                'class_title'    => $quranClass['title']
+            ]
+        );
+    }
+
+    /**
+     * إشعار الطالب عند قبول طلبه من طرف المحفظ
+     */
+    public static function onClassRequestAccepted(string $classTitle, int $studentId): void
+    {
+        self::create(
+            $studentId,
+            'ClassRequestAccepted',
+            '🎉 تم قبولك في الحلقة القرآنية',
+            "مبارك! وافق الشيخ على طلب انضمامك لحلقة: \"{$classTitle}\". يمكنك الآن دخول الغرفة والمتابعة.",
+            '✅',
+            []
+        );
+    }
+
+    /**
+     * إشعار الطالب عند رفض طلبه من طرف المحفظ
+     */
+    public static function onClassRequestRejected(string $classTitle, int $studentId): void
+    {
+        self::create(
+            $studentId,
+            'ClassRequestRejected',
+            '⚠️ نعتذر، لم يتم قبول طلب الانضمام',
+            "تم رفض طلب انضمامك لحلقة: \"{$classTitle}\" من قِبل المحفّظ المسؤول.",
+            '❌',
+            []
+        );
+    }
 }

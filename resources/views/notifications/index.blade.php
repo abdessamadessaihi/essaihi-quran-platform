@@ -16,12 +16,12 @@
   <p class="page-subtitle" style="font-size:13.5px; color:var(--text-m); line-height:1.7;">ابقَ على اطلاع بكل ما يتعلق بحفظك وأورادك ومسيرتك القرآنية</p>
 </div>
 
-{{-- الشبكة الرئيسية الحاضنة - تم تصحيحها للتجاوب التلقائي عبر الـ CSS السفلي --}}
+{{-- الشبكة الرئيسية الحاضنة --}}
 <div class="main-notification-container">
 
   {{-- ── العمود الرئيسي ── --}}
   <div class="notifications-main-column">
-
+    
     {{-- شريط الإجراءات --}}
     <div class="notif-toolbar">
       <div style="display:flex;align-items:center;gap:10px">
@@ -62,6 +62,33 @@
           <div class="notif-body">
             <p class="notif-title">{{ notifTitle($notif->type, $notif->data) }}</p>
             <p class="notif-desc">{{ notifDesc($notif->type, $notif->data) }}</p>
+            
+            {{-- 🌟 دمج كود لوحة تحكم طلبات الحلقات القرآنية (غير المقروءة) 🌟 --}}
+            @if(($notif->type ?? '') === 'NewClassRequest')
+                <div style="margin: 10px 0; background:var(--bg); padding:12px; border-radius:8px; border:1px solid var(--border); font-size:12.5px">
+                    📱 <strong>رقم هاتف الطالب للتواصل:</strong> 
+                    <a href="https://wa.me/{{ $notif->data['student_phone'] }}" target="_blank" style="color:#059669; text-decoration:none; font-weight:700; margin-right:5px;">
+                        {{ $notif->data['student_phone'] }} (واتساب مـباشر)
+                    </a>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <form action="{{ route('notifications.accept-class', $notif->id) }}" method="POST" style="margin:0;">
+                        @csrf
+                        <button type="submit" style="background:#059669; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Tajawal'">
+                            ✅ قبول وإضافة للحلقة
+                        </button>
+                    </form>
+                    
+                    <form action="{{ route('notifications.reject-class', $notif->id) }}" method="POST" style="margin:0;">
+                        @csrf
+                        <button type="submit" style="background:#dc2626; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Tajawal'">
+                            ❌ رفض الطلب
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             <div class="notif-meta">
               <span class="notif-channel {{ $notif->channel }}">
                 {{ notifChannel($notif->channel) }}
@@ -115,6 +142,33 @@
           <div class="notif-body">
             <p class="notif-title muted">{{ notifTitle($notif->type, $notif->data) }}</p>
             <p class="notif-desc">{{ notifDesc($notif->type, $notif->data) }}</p>
+
+            {{-- 🌟 دمج نفس الكود هنا أيضاً إذا تمت قراءتها دون اتخاذ إجراء 🌟 --}}
+            @if(($notif->type ?? '') === 'NewClassRequest')
+                <div style="margin: 10px 0; background:var(--bg); padding:12px; border-radius:8px; border:1px solid var(--border); font-size:12.5px; opacity: 0.8">
+                    📱 <strong>رقم هاتف الطالب للتواصل:</strong> 
+                    <a href="https://wa.me/{{ $notif->data['student_phone'] }}" target="_blank" style="color:#059669; text-decoration:none; font-weight:700; margin-right:5px;">
+                        {{ $notif->data['student_phone'] }}
+                    </a>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <form action="{{ route('notifications.accept-class', $notif->id) }}" method="POST" style="margin:0;">
+                        @csrf
+                        <button type="submit" style="background:#059669; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Tajawal'">
+                            ✅ قبول وإضافة للحلقة
+                        </button>
+                    </form>
+                    
+                    <form action="{{ route('notifications.reject-class', $notif->id) }}" method="POST" style="margin:0;">
+                        @csrf
+                        <button type="submit" style="background:#dc2626; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Tajawal'">
+                            ❌ رفض الطلب
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             <div class="notif-meta">
               <span class="notif-channel {{ $notif->channel }}">
                 {{ notifChannel($notif->channel) }}
@@ -254,7 +308,6 @@
 }
 .notifications-main-column {
   display: flex;
-  flex-col: column;
   flex-direction: column;
   gap: 20px;
 }
@@ -382,22 +435,22 @@
 /* ══ التجاوب لشاشات الهواتف والأجهزة اللوحية ═══════════════ */
 @media (max-width: 991px) {
   .main-notification-container {
-    grid-template-columns: 1fr; /* تحويل العرض إلى عمود واحد كامل لتفادي ضغط الأزرار والبطاقات */
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 576px) {
   .notif-item {
-    flex-direction: column; /* جعل الأيقونة والمحتوى والأزرار تترتب رأسياً في الهواتف الضيقة */
+    flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
   .notif-actions {
-    align-self: flex-end; /* سحب أزرار التحكم والمسح لليسار أسفل المحتوى لسهولة ضغطها باليد */
+    align-self: flex-end;
     margin-top: 4px;
   }
   .summary-stats-grid {
-    grid-template-columns: 1fr; /* جعل الأرقام الإحصائية بطاقة واحدة لكل سطر */
+    grid-template-columns: 1fr;
   }
 }
 </style>

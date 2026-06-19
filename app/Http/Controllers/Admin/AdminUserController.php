@@ -54,7 +54,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name'      => 'required|string|max:120',
-            'role'      => 'required|in:super_admin,family_admin,member',
+            'role'      => 'required|in:super_admin,family_admin,member,mohafid,student',
             'is_active' => 'boolean',
         ]);
         $user->update($validated);

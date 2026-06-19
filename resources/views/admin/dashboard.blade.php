@@ -32,6 +32,14 @@
                 font-weight:600;color:var(--text);cursor:pointer;text-decoration:none;">
         👨‍👩‍👧 إدارة العائلات
       </a>
+      <a href="{{ route('quran-classes.index') }}" class="admin-btn"
+     style="display:inline-flex;align-items:center;justify-content:center;gap:7px;
+            padding:10px 18px;border-radius:11px;
+            background:#064e3b;border:1.5px solid #042a1e;
+            font-family:'Tajawal',sans-serif;font-size:13px;
+            font-weight:600;color:#fff;cursor:pointer;text-decoration:none;">
+    🏫 إدارة حلقات التحفيظ
+  </a>
     </div>
   </div>
 </div>
