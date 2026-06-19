@@ -543,19 +543,6 @@ body{font-family:'Tajawal',sans-serif;color:#1a1a1a;overflow-x:hidden;background
       @endguest
     </div>
 
-    <div class="hero-stats">
-      @foreach([
-        ['٣٠','جزءاً قرآنياً'],
-        ['١١٤','سورة مرتّبة'],
-        ['٦٠٠٠+','آية كريمة'],
-        ['∞','أجراً مضاعفاً'],
-      ] as [$n,$l])
-      <div class="hero-stat-item">
-        <div class="hero-stat-num">{{ $n }}</div>
-        <div class="hero-stat-lbl">{{ $l }}</div>
-      </div>
-      @endforeach
-    </div>
   </div>
 
   <div class="scroll-indicator">
@@ -567,22 +554,6 @@ body{font-family:'Tajawal',sans-serif;color:#1a1a1a;overflow-x:hidden;background
 </section>
 
 
-{{-- ═══ STATS BAND ═══ --}}
-<section class="stats-band">
-  <div class="stats-inner">
-    @foreach([
-      ['٢٠+','عائلة منضمة'],
-      ['١٢+','ختمة مكتملة'],
-      ['٥٠٪','نسبة الالتزام'],
-      ['٣٠٠+','ورد يومي مسجّل'],
-    ] as [$n,$l])
-    <div class="stat-item">
-      <div class="stat-num">{{ $n }}</div>
-      <div class="stat-label">{{ $l }}</div>
-    </div>
-    @endforeach
-  </div>
-</section>
 
 
 {{-- ═══ FEATURES ═══ --}}
@@ -647,10 +618,7 @@ body{font-family:'Tajawal',sans-serif;color:#1a1a1a;overflow-x:hidden;background
          class="logo-section-img"/>
     <div class="logo-section-text">
       <h2 class="logo-section-title">عائلة آل السيحي</h2>
-      <p class="logo-section-desc">
-        بدأت الفكرة من ختمة عائلية كانت تُدار عبر مجموعات واتساب وجداول يدوية.
-        اليوم نبني منصة رقمية تجعل متابعة القرآن أكثر تنظيماً وتحفيزاً،
-        وتحوّل الإنجازات الفردية إلى رحلة عائلية جماعية مباركة.
+      <p class="logo-section-desc">الإسهام في إعداد أسرة قرآنية رائدة، تتلو آيات الله وجدانا وتدبرا، وتتمثل حقائقه فكرا واعتقادا، وتهتدي بهداياته سلوكا وعملا.
       </p>
       <div class="logo-section-values">
         @foreach(['الالتزام','التنظيم','التحفيز','المشاركة الجماعية','الاستمرارية'] as $v)

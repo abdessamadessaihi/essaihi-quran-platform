@@ -16,8 +16,7 @@ if (!function_exists('notifIcon')) {
             str_contains($type, 'Revision')     => '🧠',
             str_contains($type, 'Streak')       => '🔥',
             str_contains($type, 'Badge')        => '🏅',
-            str_contains($type, 'Family')       => '👨‍👩‍👧',
-            str_contains($type, 'Khatma')       => '📗',
+            str_contains($type, 'Family') || str_contains($type, 'NewMember') => '👨‍👩‍👧',            str_contains($type, 'Khatma')       => '📗',
             str_contains($type, 'XP')           => '✨',
             default                             => '🔔',
         };
@@ -46,14 +45,15 @@ if (!function_exists('notifTitle')) {
     /**
      * Retourne le titre lisible de la notification.
      */
-    function notifTitle(string $type, ?array $data): string
+   function notifTitle(string $type, ?array $data): string
     {
-        // Si le titre est stocké dans les data JSON
         if (!empty($data['title'])) {
             return $data['title'];
         }
 
         return match (true) {
+            str_contains($type, 'FamilyRequestAccepted') => '✅ تم قبول انضمامك للعائلة',
+            str_contains($type, 'FamilyRequestRejected') => '❌ نعتذر، تم رفض طلب الانضمام',
             str_contains($type, 'WardReminder')     => 'تذكير بورد اليوم',
             str_contains($type, 'WardCompleted')    => 'أُتمّ ورد اليوم 🎉',
             str_contains($type, 'MemorizationNew')  => 'حفظ جديد مُسجَّل',
@@ -64,6 +64,8 @@ if (!function_exists('notifTitle')) {
             str_contains($type, 'BadgeEarned')      => 'وسام جديد 🏅',
             str_contains($type, 'FamilyJoined')     => 'عضو جديد انضم للعائلة',
             str_contains($type, 'KhatmaCompleted')  => 'اكتملت الختمة القرآنية 📗',
+            str_contains($type, 'FamilyMemberRemoved') => '🚫 تم إيقاف عضويتك في العائلة',
+            
             default                                 => 'إشعار من المنصة',
         };
     }
@@ -75,7 +77,6 @@ if (!function_exists('notifDesc')) {
      */
     function notifDesc(string $type, ?array $data): string
     {
-        // Si la description est stockée dans les data JSON
         if (!empty($data['message'])) {
             return $data['message'];
         }
@@ -84,7 +85,9 @@ if (!function_exists('notifDesc')) {
         }
 
         return match (true) {
-            str_contains($type, 'WardReminder')     => 'لا تنسَ ورادك اليومي وحافظ على سلسلتك.',
+            str_contains($type, 'FamilyRequestAccepted') => 'وافق مسؤول العائلة على طلب انضمامك.',
+            str_contains($type, 'FamilyRequestRejected') => 'تم رفض طلب انضمامك إلى العائلة من قِبل مسؤول العائلة.',
+            str_contains($type, 'WardReminder')     => 'لا تنسَ أورادك اليومي وحافظ على سلسلتك.',
             str_contains($type, 'WardCompleted')    => 'بارك الله فيك! أتممت ورد اليوم بالكامل.',
             str_contains($type, 'MemorizationNew')  => 'تم تسجيل محفوظاتك الجديدة بنجاح.',
             str_contains($type, 'RevisionDue')      => 'حان موعد مراجعة بعض محفوظاتك لتثبيتها.',
@@ -94,6 +97,7 @@ if (!function_exists('notifDesc')) {
             str_contains($type, 'BadgeEarned')      => 'حصلت على وسام جديد. شكراً على مجهودك!',
             str_contains($type, 'FamilyJoined')     => 'انضم فرد جديد إلى عائلتك القرآنية.',
             str_contains($type, 'KhatmaCompleted')  => 'اكتمل ختم القرآن الكريم. جزاكم الله خيراً!',
+            str_contains($type, 'FamilyMemberRemoved') => 'قام مسؤول العائلة بإيقاف عضويتك من المجموعة العائلية القرآنية.',
             default                                 => 'تحقق من المنصة لمعرفة التفاصيل.',
         };
     }

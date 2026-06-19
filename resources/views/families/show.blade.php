@@ -62,155 +62,155 @@
 </div>
 
 <div style="display:grid;grid-template-columns:minmax(0,2fr) 320px;gap:22px">
+{{-- ── العمود الرئيسي ── --}}
+<div style="display:flex;flex-direction:column;gap:20px">
 
-  {{-- ── العمود الرئيسي ── --}}
-  <div style="display:flex;flex-direction:column;gap:20px">
-
-    {{-- طلبات الانضمام (للمسؤول فقط) --}}
-    @if($isAdmin && $pendingMembers->isNotEmpty())
-    <div class="card" style="border-color:#fde68a">
-      <div style="padding:16px 22px;
-                  background:linear-gradient(135deg,#fffbeb,#fef3c7);
-                  border-bottom:1px solid #fde68a;
-                  display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">⏳</span>
-        <div>
-          <p style="font-size:14px;font-weight:700;color:#78350f">
-            طلبات الانضمام ({{ $pendingMembers->count() }})
+  {{-- طلبات الانضمام (للمسؤول فقط) --}}
+  @if($isAdmin && $pendingMembers->isNotEmpty())
+  <div class="card" style="border-color:#fde68a">
+    <div style="padding:16px 22px;
+                background:linear-gradient(135deg,#fffbeb,#fef3c7);
+                border-bottom:1px solid #fde68a;
+                display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">⏳</span>
+      <div>
+        <p style="font-size:14px;font-weight:700;color:#78350f">
+          طلبات الانضمام ({{ $pendingMembers->count() }})
+        </p>
+        <p style="font-size:11.5px;color:#b45309;margin-top:2px">
+          بانتظار مراجعتك وموافقتك
+        </p>
+      </div>
+    </div>
+    <div style="padding:16px 22px;
+                display:flex;flex-direction:column;gap:10px">
+      @foreach($pendingMembers as $pending)
+      <div style="display:flex;align-items:center;gap:14px;
+                  padding:14px;border-radius:14px;
+                  background:var(--bg);border:1px solid var(--border)">
+        <div style="width:42px;height:42px;border-radius:12px;
+                    background:linear-gradient(135deg,#064e3b,#0d6b52);
+                    display:flex;align-items:center;justify-content:center;
+                    color:#fff;font-size:16px;font-weight:700;flex-shrink:0">
+          {{ mb_substr($pending->user->name, 0, 1) }}
+        </div>
+        <div style="flex:1;min-width:0">
+          <p style="font-size:13.5px;font-weight:700;color:var(--text)">
+            {{ $pending->user->name }}
           </p>
-          <p style="font-size:11.5px;color:#b45309;margin-top:2px">
-            بانتظار مراجعتك وموافقتك
+          <p style="font-size:11.5px;color:var(--text-m);margin-top:2px">
+            {{ $pending->user->email }} •
+            طلب {{ $pending->created_at->locale('ar')->diffForHumans() }}
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          {{-- فورم القبول السليم --}}
+          <form method="POST" action="{{ route('families.members.approve', [$family, $pending]) }}">
+            @csrf
+            <button type="submit"
+                    style="padding:8px 16px;border-radius:9px;
+                           background:linear-gradient(135deg,#059669,#047857);
+                           border:none;color:#fff;font-size:12.5px;font-weight:700;
+                           cursor:pointer;font-family:'Tajawal',sans-serif">
+              ✓ قبول
+            </button>
+          </form>
+          {{-- فورم الرفض السليم --}}
+          <form method="POST" action="{{ route('families.members.reject', [$family, $pending]) }}">
+            @csrf
+            <button type="submit"
+                    style="padding:8px 14px;border-radius:9px;
+                           background:#fee2e2;border:1px solid #fecaca;
+                           color:#991b1b;font-size:12.5px;font-weight:700;
+                           cursor:pointer;font-family:'Tajawal',sans-serif">
+              ✗ رفض
+            </button>
+          </form>
+        </div>
+      </div>
+      @endforeach
+    </div>
+  </div>
+  @endif
+
+  {{-- الأعضاء النشطون --}}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-title">
+        <div class="card-icon green">👥</div>
+        <div>
+          الأعضاء النشطون
+          <p style="font-size:11px;color:var(--text-m);font-weight:400;margin-top:1px">
+            {{ $activeMembers->count() }} عضو
           </p>
         </div>
       </div>
-      <div style="padding:16px 22px;
-                  display:flex;flex-direction:column;gap:10px">
-        @foreach($pendingMembers as $pending)
-        <div style="display:flex;align-items:center;gap:14px;
+    </div>
+    <div style="padding:18px 22px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+                  gap:12px">
+        @forelse($activeMembers as $mem)
+        <div style="display:flex;align-items:center;gap:12px;
                     padding:14px;border-radius:14px;
-                    background:var(--bg);border:1px solid var(--border)">
+                    background:var(--bg);border:1px solid var(--border);
+                    transition:border-color .18s"
+             onmouseover="this.style.borderColor='#a7f3d0'"
+             onmouseout="this.style.borderColor='var(--border)'">
           <div style="width:42px;height:42px;border-radius:12px;
-                      background:linear-gradient(135deg,#064e3b,#0d6b52);
                       display:flex;align-items:center;justify-content:center;
-                      color:#fff;font-size:16px;font-weight:700;flex-shrink:0">
-            {{ mb_substr($pending->user->name, 0, 1) }}
+                      font-size:16px;font-weight:700;color:#fff;flex-shrink:0;
+                      background:linear-gradient(135deg,#064e3b,#0d6b52)">
+            {{ mb_substr($mem->user->name, 0, 1) }}
           </div>
           <div style="flex:1;min-width:0">
-            <p style="font-size:13.5px;font-weight:700;color:var(--text)">
-              {{ $pending->user->name }}
+            <p style="font-size:13px;font-weight:700;color:var(--text);
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ $mem->user->name }}
+              @if($mem->user->id === auth()->id())
+                <span style="font-size:9px;padding:1px 6px;border-radius:100px;
+                             background:#059669;color:#fff">أنت</span>
+              @endif
             </p>
-            <p style="font-size:11.5px;color:var(--text-m);margin-top:2px">
-              {{ $pending->user->email }} •
-              طلب {{ $pending->created_at->locale('ar')->diffForHumans() }}
+            <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+              @if($mem->role === 'admin')
+                <span style="font-size:10.5px;padding:2px 8px;border-radius:100px;
+                             background:#fffbeb;color:#92400e;border:1px solid #fde68a;
+                             font-weight:700">👑 مسؤول</span>
+              @else
+                <span style="font-size:10.5px;padding:2px 8px;border-radius:100px;
+                             background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;
+                             font-weight:700">📖 عضو</span>
+              @endif
+            </div>
+            <p style="font-size:10.5px;color:var(--text-m);margin-top:2px">
+              انضم {{ $mem->joined_at?->locale('ar')->isoFormat('D MMM YYYY') ?? '—' }}
             </p>
           </div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <form method="POST"
-                  action="{{ route('families.members.approve', [$family, $pending]) }}">
-              @csrf
-              <button type="submit"
-                      style="padding:8px 16px;border-radius:9px;
-                             background:linear-gradient(135deg,#059669,#047857);
-                             border:none;color:#fff;font-size:12.5px;font-weight:700;
-                             cursor:pointer;font-family:'Tajawal',sans-serif">
-                ✓ قبول
-              </button>
-            </form>
-            <form method="POST"
-                  action="{{ route('families.members.reject', [$family, $pending]) }}">
-              @csrf
-              <button type="submit"
-                      style="padding:8px 14px;border-radius:9px;
-                             background:#fee2e2;border:1px solid #fecaca;
-                             color:#991b1b;font-size:12.5px;font-weight:700;
-                             cursor:pointer;font-family:'Tajawal',sans-serif">
-                ✗ رفض
-              </button>
-            </form>
-          </div>
+          @if($isAdmin && $mem->user->id !== auth()->id())
+          {{-- ✅ تم إصلاح فورم الإيقاف ليتوافق مع مسار DELETE الجديد --}}
+          <form method="POST" action="{{ route('families.members.remove', [$family, $mem]) }}">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                    onclick="return confirm('هل تريد إيقاف هذا العضو؟')"
+                    style="width:28px;height:28px;border-radius:7px;
+                           background:#fee2e2;border:1px solid #fecaca;
+                           color:#ef4444;cursor:pointer;font-size:12px;
+                           display:flex;align-items:center;justify-content:center"
+                    title="إيقاف العضو">
+              ✕
+            </button>
+          </form>
+          @endif
         </div>
-        @endforeach
+        @empty
+        <p style="color:var(--text-m);font-size:13px;padding:20px;text-align:center">
+          لا يوجد أعضاء نشطون بعد
+        </p>
+        @endforelse
       </div>
     </div>
-    @endif
-
-    {{-- الأعضاء النشطون --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-title">
-          <div class="card-icon green">👥</div>
-          <div>
-            الأعضاء النشطون
-            <p style="font-size:11px;color:var(--text-m);font-weight:400;margin-top:1px">
-              {{ $activeMembers->count() }} عضو
-            </p>
-          </div>
-        </div>
-      </div>
-      <div style="padding:18px 22px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-                    gap:12px">
-          @forelse($activeMembers as $mem)
-          <div style="display:flex;align-items:center;gap:12px;
-                      padding:14px;border-radius:14px;
-                      background:var(--bg);border:1px solid var(--border);
-                      transition:border-color .18s"
-               onmouseover="this.style.borderColor='#a7f3d0'"
-               onmouseout="this.style.borderColor='var(--border)'">
-            <div style="width:42px;height:42px;border-radius:12px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:700;color:#fff;flex-shrink:0;
-                        background:linear-gradient(135deg,#064e3b,#0d6b52)">
-              {{ mb_substr($mem->user->name, 0, 1) }}
-            </div>
-            <div style="flex:1;min-width:0">
-              <p style="font-size:13px;font-weight:700;color:var(--text);
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                {{ $mem->user->name }}
-                @if($mem->user->id === auth()->id())
-                  <span style="font-size:9px;padding:1px 6px;border-radius:100px;
-                               background:#059669;color:#fff">أنت</span>
-                @endif
-              </p>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-                @if($mem->role === 'admin')
-                  <span style="font-size:10.5px;padding:2px 8px;border-radius:100px;
-                               background:#fffbeb;color:#92400e;border:1px solid #fde68a;
-                               font-weight:700">👑 مسؤول</span>
-                @else
-                  <span style="font-size:10.5px;padding:2px 8px;border-radius:100px;
-                               background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;
-                               font-weight:700">📖 عضو</span>
-                @endif
-              </div>
-              <p style="font-size:10.5px;color:var(--text-m);margin-top:2px">
-                انضم {{ $mem->joined_at?->locale('ar')->isoFormat('D MMM YYYY') ?? '—' }}
-              </p>
-            </div>
-            @if($isAdmin && $mem->user->id !== auth()->id())
-            <form method="POST"
-                  action="{{ route('families.members.remove', [$family, $mem]) }}">
-              @csrf
-              <button type="submit"
-                      onclick="return confirm('هل تريد إيقاف هذا العضو؟')"
-                      style="width:28px;height:28px;border-radius:7px;
-                             background:#fee2e2;border:1px solid #fecaca;
-                             color:#ef4444;cursor:pointer;font-size:12px;
-                             display:flex;align-items:center;justify-content:center"
-                      title="إيقاف العضو">
-                ✕
-              </button>
-            </form>
-            @endif
-          </div>
-          @empty
-          <p style="color:var(--text-m);font-size:13px;padding:20px;text-align:center">
-            لا يوجد أعضاء نشطون بعد
-          </p>
-          @endforelse
-        </div>
-      </div>
-    </div>
+  </div>
 
     {{-- ختمات العائلة --}}
     <div class="card">

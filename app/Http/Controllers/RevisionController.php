@@ -14,21 +14,33 @@ class RevisionController extends Controller
     {
         $user = Auth::user();
 
+        // مراجعات اليوم المتبقية (المعلقة والمتأخرة المجدولة لليوم أو ما قبله)
         $todayRevisions = Revision::where('user_id', $user->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'overdue'])
             ->whereDate('scheduled_date', '<=', today())
             ->with('memorization')
+            ->orderBy('scheduled_date')
             ->get();
 
+        // مراجعات متأخرة (فائتة) كعدد للإحصائيات
+        $overdueRevisions = Revision::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->whereDate('scheduled_date', '<', today())
+            ->count();
+
+        // مراجعات هذا الأسبوع
         $weekRevisions = Revision::where('user_id', $user->id)
             ->whereBetween('scheduled_date', [
-                now()->startOfWeek(), now()->endOfWeek()
+                now()->startOfWeek(),
+                now()->endOfWeek(),
             ])->count();
 
+        // مكتملة هذا الأسبوع
         $completedThisWeek = Revision::where('user_id', $user->id)
             ->where('status', 'completed')
             ->whereBetween('completed_date', [
-                now()->startOfWeek(), now()->endOfWeek()
+                now()->startOfWeek(),
+                now()->endOfWeek(),
             ])->count();
 
         $achievementRate = $weekRevisions > 0
@@ -37,9 +49,17 @@ class RevisionController extends Controller
 
         $totalMemorizations = Memorization::where('user_id', $user->id)->count();
 
+        // 🌟 الجديد: جلب مسار المراجعات الكامل (تمت، لم تتم، مجدولة مستقبلاً)
+        $allRevisionsLog = Revision::where('user_id', $user->id)
+            ->with('memorization')
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END") // المراجعات القادمة أولاً ثم المكتملة
+            ->orderByDesc('scheduled_date') // الترتيب حسب التاريخ
+            ->paginate(10, ['*'], 'revisions_page'); // استخدام اسم مخصص للـ pagination لمنع التداخل
+
         return view('revisions.index', compact(
-            'todayRevisions','weekRevisions',
-            'completedThisWeek','achievementRate','totalMemorizations'
+            'todayRevisions', 'weekRevisions', 'completedThisWeek',
+            'achievementRate', 'totalMemorizations', 'overdueRevisions',
+            'allRevisionsLog' // تدوير المتغير الجديد للملف
         ));
     }
 
@@ -52,25 +72,32 @@ class RevisionController extends Controller
             'notes' => 'nullable|string|max:300',
         ]);
 
-        $revision->complete($validated['score'] ?? 80, $validated['notes'] ?? null);
+        $score = $validated['score'] ?? 80;
+        $revision->complete($score, $validated['notes'] ?? null);
 
-        // جدولة المراجعة التالية
-        $nextDate = match($revision->revision_type) {
-            'daily'   => today()->addDays(3),
-            'weekly'  => today()->addWeeks(1),
-            'monthly' => today()->addMonths(1),
-            default   => today()->addDays(7),
+        // تحديث مستوى الإتقان بناءً على درجة المراجعة
+        $mastery = match(true) {
+            $score >= 90 => 'excellent',
+            $score >= 70 => 'good',
+            $score >= 50 => 'fair',
+            default      => 'weak',
         };
-
-        Revision::create([
-            'user_id'         => Auth::id(),
-            'memorization_id' => $revision->memorization_id,
-            'revision_type'   => $revision->revision_type === 'daily' ? 'weekly' : 'monthly',
-            'status'          => 'pending',
-            'scheduled_date'  => $nextDate,
+        $revision->memorization->update([
+            'mastery_level'    => $mastery,
+            'last_reviewed_at' => today(),
+            'review_score'     => $score,
         ]);
 
-        XpTransaction::award(Auth::id(), 50, 'revision', $revision->id, 'مراجعة مكتملة');
+        // جدولة المراجعة التالية بنظام التكرار المتباعد
+        $this->scheduleNextRevision($revision, $score);
+
+        // منح XP
+        XpTransaction::award(
+            Auth::id(), 50,
+            'revision',
+            $revision->id,
+            'مراجعة مكتملة'
+        );
 
         return back()->with('success', 'أحسنت! تمت المراجعة بنجاح ✅');
     }
@@ -79,6 +106,43 @@ class RevisionController extends Controller
     {
         abort_unless($revision->user_id === Auth::id(), 403);
         $revision->update(['status' => 'skipped']);
-        return back();
+        return back()->with('success', 'تم تأجيل المراجعة');
+    }
+
+    /**
+     * جدولة المراجعة التالية بنظام التكرار المتباعد
+     * اليوم → غداً → 3 أيام → أسبوع → شهر
+     */
+    private function scheduleNextRevision(Revision $revision, int $score): void
+    {
+        // خريطة التكرار المتباعد حسب نوع المراجعة
+        $nextType = match($revision->revision_type) {
+            'daily'   => 'weekly',
+            'weekly'  => 'monthly',
+            'monthly' => null, // اكتملت دورة المراجعة
+            default   => null,
+        };
+
+        if (!$nextType) return;
+
+        // كلما كان الإتقان ضعيفاً، كلما كانت المراجعة التالية أقرب
+        $daysUntilNext = match(true) {
+            $score >= 90 && $nextType === 'weekly'  => 7,
+            $score >= 90 && $nextType === 'monthly' => 30,
+            $score >= 70 && $nextType === 'weekly'  => 5,
+            $score >= 70 && $nextType === 'monthly' => 21,
+            $score >= 50 && $nextType === 'weekly'  => 3,
+            $score >= 50 && $nextType === 'monthly' => 14,
+            $nextType === 'weekly'                  => 2,
+            default                                 => 7,
+        };
+
+        Revision::create([
+            'user_id'         => Auth::id(),
+            'memorization_id' => $revision->memorization_id,
+            'revision_type'   => $nextType,
+            'status'          => 'pending',
+            'scheduled_date'  => today()->addDays($daysUntilNext),
+        ]);
     }
 }

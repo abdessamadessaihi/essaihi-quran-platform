@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "public": true,
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/build/(.*)",
+      "destination": "/public/build/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.php"
+    }
+  ]
+}

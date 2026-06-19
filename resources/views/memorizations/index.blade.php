@@ -107,7 +107,7 @@
   {{-- ── العمود الرئيسي ── --}}
   <div class="mem-main">
 
-    {{-- ══ جدول المحفوظات ══ --}}
+    {{-- ══ سجلات الحفظ ══ --}}
     <div class="card">
       <div class="card-header">
         <div class="card-header-title">
@@ -137,7 +137,9 @@
       </div>
 
       @if($memorizations->count())
-      <div style="overflow-x:auto">
+      
+      {{-- [1] حاوية الكمبيوتر: تظهر على الشاشات الكبيرة فقط --}}
+      <div class="desktop-table-container">
         <table class="mem-table">
           <thead>
             <tr>
@@ -209,26 +211,82 @@
                 @endif
               </td>
               <td>
-                <div style="display:flex;gap:6px;align-items:center">
-                  {{-- زر حذف --}}
-                  <form method="POST"
-                        action="{{ route('memorizations.destroy', $mem) }}"
-                        onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="mem-del-btn" title="حذف">
-                      <svg width="13" height="13" fill="none" stroke="currentColor"
-                           stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
-                      </svg>
-                    </button>
-                  </form>
-                </div>
+                <form method="POST"
+                      action="{{ route('memorizations.destroy', $mem) }}"
+                      onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟')">
+                  @csrf @method('DELETE')
+                  <button type="submit" class="mem-del-btn" title="حذف">
+                    <svg width="13" height="13" fill="none" stroke="currentColor"
+                         stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                </form>
               </td>
             </tr>
             @endforeach
           </tbody>
         </table>
       </div>
+
+      {{-- [2] حاوية الهاتف الذكية: تظهر على الهواتف بشكل بطاقات مريحة وتمنع تمزق التصميم --}}
+      <div class="mobile-cards-container">
+        @foreach($memorizations as $mem)
+        @php
+          $color = $masteryColors[$mem->mastery_level] ?? $masteryColors['fair'];
+          $surahName = $surahs[$mem->surah_number] ?? 'سورة '.$mem->surah_number;
+        @endphp
+        <div class="m-mem-card">
+          <div class="m-mem-card-header">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="mem-surah-num">{{ $mem->surah_number }}</div>
+              <div>
+                <h4 style="margin:0;font-size:14px;font-weight:700;color:var(--text)">{{ $surahName }}</h4>
+                <span style="font-size:11px;color:var(--text-m)">{{ $mem->memorized_at->locale('ar')->isoFormat('D MMMM YYYY') }}</span>
+              </div>
+            </div>
+            <span class="mem-mastery-badge"
+                  style="background:{{ $color['bg'] }};
+                         color:{{ $color['text'] }};
+                         border-color:{{ $color['border'] }}">
+              <span class="mem-mastery-dot" style="background:{{ $color['dot'] }}"></span>
+              {{ $masteryLabels[$mem->mastery_level] ?? $mem->mastery_level }}
+            </span>
+          </div>
+          
+          <div class="m-mem-card-body">
+            <div class="m-mem-info-pill">
+              <span class="m-mem-label">الآيات:</span>
+              <span class="mem-ayah-badge" style="margin:0">{{ $mem->ayah_from }} — {{ $mem->ayah_to }}</span>
+            </div>
+            <div class="m-mem-info-pill">
+              <span class="m-mem-label">العدد:</span>
+              <strong>{{ $mem->ayah_count }} آية</strong>
+            </div>
+          </div>
+
+          <div class="m-mem-card-footer">
+            <span style="font-size:11.5px;color:var(--text-m)">
+              🔄 آخر مراجعة: 
+              @if($mem->last_reviewed_at)
+                <strong style="color:var(--text)">{{ $mem->last_reviewed_at->locale('ar')->diffForHumans() }}</strong>
+              @else
+                <strong style="color:#ef4444">لم تُراجع بعد</strong>
+              @endif
+            </span>
+            <form method="POST" action="{{ route('memorizations.destroy', $mem) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟')">
+              @csrf @method('DELETE')
+              <button type="submit" class="mem-del-btn" style="width:32px;height:32px">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+        @endforeach
+      </div>
+
       {{-- Pagination --}}
       @if($memorizations->hasPages())
       <div style="padding:16px 22px;border-top:1px solid var(--border)">
@@ -275,7 +333,7 @@
         </div>
       </div>
       <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="mastery-distribution-grid">
           @foreach($masteryLabels as $key => $label)
           @php
             $count = $masteryDistribution[$key] ?? 0;
@@ -487,7 +545,11 @@
   display: flex; flex-direction: column; gap: 18px;
 }
 
-/* ══ Table ═══════════════════════════════════════════════ */
+/* ══ التجاوب والتحكم في عرض الجداول ═════════════════════ */
+.desktop-table-container { display: block; overflow-x: auto; }
+.mobile-cards-container { display: none; padding: 4px 16px 16px 16px; }
+.mastery-distribution-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
 .mem-table {
   width: 100%; border-collapse: collapse;
   font-size: 13px;
@@ -507,6 +569,17 @@
 }
 .mem-table tbody tr:last-child td { border-bottom: none; }
 .mem-table tbody tr:hover { background: var(--bg); }
+
+/* ══ بطاقات الحفظ للهاتف ════════════════════════════════ */
+.m-mem-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px;
+}
+.m-mem-card-header { display: flex; justify-content: space-between; align-items: center; }
+.m-mem-card-body { display: flex; gap: 10px; background: var(--bg); padding: 10px; border-radius: 10px; border: 1px solid var(--border); }
+.m-mem-info-pill { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.m-mem-label { font-size: 11px; color: var(--text-m); }
+.m-mem-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
 
 /* ══ Badges ══════════════════════════════════════════════ */
 .mem-surah-num {
@@ -568,14 +641,24 @@
   padding: 64px 40px; text-align: center;
 }
 
-/* ══ Responsive ══════════════════════════════════════════ */
+/* ══ شاشات الهواتف والتابلت (Responsive Setup) ═══════════ */
+@media (max-width: 1200px) {
+  .mem-stats { grid-template-columns: repeat(2, 1fr); }
+  .mastery-distribution-grid { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 1024px) {
   .mem-layout { grid-template-columns: 1fr; }
-  .mem-stats  { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .mem-stats { grid-template-columns: 1fr; }
-  .mem-header-content { flex-direction: column; }
+  /* الحماية السحرية: إخفاء الجدول وإظهار بطاقات الهاتف */
+  .desktop-table-container { display: none !important; }
+  .mobile-cards-container { display: block !important; }
+  
+  .mem-stats { grid-template-columns: 1fr; gap: 10px; }
+  .mastery-distribution-grid { grid-template-columns: 1fr; }
+  .mem-header-content { flex-direction: column; align-items: stretch; text-align: center; gap: 14px; }
+  .mem-btn-primary { justify-content: center; }
+  .mem-title { font-size: 1.6rem; }
 }
 </style>
 @endpush

@@ -17,7 +17,7 @@ return new class extends Migration
                   ->comment('Positive or negative XP');
             $table->enum('source_type', [
                 'ward', 'juz', 'revision',
-                'badge', 'khatma'
+                'badge', 'khatma', 'memorization'
             ]);
             $table->unsignedBigInteger('source_id')
                   ->nullable()

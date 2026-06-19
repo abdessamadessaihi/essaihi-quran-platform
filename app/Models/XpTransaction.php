@@ -14,6 +14,7 @@ class XpTransaction extends Model
     const SOURCE_REVISION  = 'revision';
     const SOURCE_BADGE     = 'badge';
     const SOURCE_KHATMA    = 'khatma';
+    const SOURCE_MEMORIZATION = 'memorization';
 
     protected $fillable = [
         'user_id',

@@ -208,6 +208,20 @@
 </div>
 @endif
 
+
+    {{-- نصيحة --}}
+    <div style="background:linear-gradient(135deg,#031810,#042a1e);
+                border-radius:16px;padding:22px;text-align:center">
+      <p style="font-family:'Amiri',serif;font-size:1.2rem;
+                color:rgba(255,255,255,.9);line-height:2;margin-bottom:8px">
+        ﴿ رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا﴾
+      </p>
+      <p style="font-size:11px;color:#f59e0b;opacity:.8">
+        سورة ص — الآية ٢٩
+      </p>
+    </div>
+
+
 @endsection
 
 @push('styles')

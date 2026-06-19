@@ -16,14 +16,59 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminFamilyController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\MushafController;
+use App\Http\Controllers\TilawatController;
+use App\Http\Controllers\CommentController;
 
+Route::prefix('admin')->name('admin.')
+     ->middleware('super_admin')
+     ->group(function () {
+
+    Route::get('/dashboard', [AdminDashboardController::class,'index'])
+         ->name('dashboard');
+
+    // ── المستخدمون ──────────────────────────────────
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/',                    [AdminUserController::class,'index'])
+             ->name('index');
+        Route::get('/{user}',              [AdminUserController::class,'show'])
+             ->name('show');
+        Route::patch('/{user}',            [AdminUserController::class,'update'])
+             ->name('update');
+        Route::post('/{user}/toggle',      [AdminUserController::class,'toggleStatus'])
+             ->name('toggle');
+        Route::post('/{user}/notify',      [AdminUserController::class,'sendNotification'])
+             ->name('notify');
+        Route::delete('/{user}',           [AdminUserController::class,'destroy'])
+             ->name('destroy');
+        // إشعار جماعي
+        Route::post('/broadcast',          [AdminUserController::class,'broadcastNotification'])
+             ->name('broadcast');
+    });
+
+    // ── العائلات ─────────────────────────────────────
+    Route::prefix('families')->name('families.')->group(function () {
+        Route::get('/',                    [AdminFamilyController::class,'index'])
+             ->name('index');
+        Route::get('/{family}',            [AdminFamilyController::class,'show'])
+             ->name('show');
+        Route::patch('/{family}',          [AdminFamilyController::class,'update'])
+             ->name('update');
+        Route::post('/{family}/notify',    [AdminFamilyController::class,'sendNotification'])
+             ->name('notify');
+        Route::delete('/{family}',         [AdminFamilyController::class,'destroy'])
+             ->name('destroy');
+    });
+});
 // ════════════════════════════════════════════════════════
 // الصفحة الرئيسية العامة
 // ════════════════════════════════════════════════════════
 Route::get('/', fn() => view('welcome'))->name('home');
 
 // ════════════════════════════════════════════════════════
-// المنطقة المحمية
+// المنطقة المحمية (المستخدمين المسجلين والنشطين)
 // ════════════════════════════════════════════════════════
 Route::middleware(['auth', 'verified', 'active_member'])
      ->group(function () {
@@ -31,6 +76,15 @@ Route::middleware(['auth', 'verified', 'active_member'])
     // ── لوحة التحكم ──────────────────────────────────
     Route::get('/dashboard', [DashboardController::class, 'index'])
          ->name('dashboard');
+     
+    // ── الملف الشخصي الموحد ───────────────────────────────
+    Route::prefix('profile')->name('profile.')->group(function () {
+         Route::get('/',           [ProfileController::class, 'show'])   ->name('show');
+         Route::get('/edit',       [ProfileController::class, 'edit'])   ->name('edit');
+         Route::patch('/',         [ProfileController::class, 'update']) ->name('update');
+         Route::patch('/password', [ProfileController::class, 'updatePassword'])->name('password');
+         Route::delete('/',        [ProfileController::class, 'destroy'])->name('destroy');
+    });
 
     // ════════════════════════════════════════════════
     // العائلات
@@ -63,11 +117,10 @@ Route::middleware(['auth', 'verified', 'active_member'])
         // ── إدارة الأعضاء ───────────────────────────
         Route::post('/{family}/members/{member}/approve',
             [FamilyController::class, 'approveMember']
-        )->name('members.approve')->middleware('family_admin');
-
-        Route::post('/{family}/members/{member}/reject',
-            [FamilyController::class, 'rejectMember']
-        )->name('members.reject')->middleware('family_admin');
+           )->name('members.approve')->middleware('family_admin');
+          Route::post('/{family}/members/{member}/reject', 
+               [FamilyController::class, 'rejectMember'])
+               ->name('members.reject')->middleware('family_admin');
 
         Route::post('/{family}/members/{member}/promote',
             [FamilyController::class, 'promoteToAdmin']
@@ -180,6 +233,35 @@ Route::middleware(['auth', 'verified', 'active_member'])
              [MemorizationController::class, 'destroy'])
              ->name('destroy');
     });
+// ── قسم التلاوات المنظم والمحمي (تم التعديل والتنظيف) ──────────────────
+    Route::get('/tilawats', [TilawatController::class, 'index'])
+         ->name('tilawats.index');
+
+     Route::delete('/tilawats/', [TilawatController::class, 'destroy'])
+          ->name('tilawats.destroy');
+
+    Route::post('/tilawats', [TilawatController::class, 'store'])
+         ->name('tilawats.store');
+
+    // ── المقالات التدبرية ───────────────────────────────────
+    Route::prefix('articles')->name('articles.')->group(function () {
+         Route::get('/',              [ArticleController::class, 'index']) ->name('index');
+         Route::get('/create',        [ArticleController::class, 'create'])->name('create');
+         Route::post('/',             [ArticleController::class, 'store']) ->name('store');
+         Route::get('/{article}',     [ArticleController::class, 'show'])  ->name('show');
+         Route::get('/{article}/edit',[ArticleController::class, 'edit'])  ->name('edit');
+         Route::patch('/{article}',   [ArticleController::class, 'update'])->name('update');
+         Route::delete('/{article}',  [ArticleController::class, 'destroy'])->name('destroy');
+     });
+     Route::post('/articles/{article}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
+
+    // ── المصحف المشترك ──────────────────────────────────
+    Route::prefix('mushaf')->name('mushaf.')->group(function () {
+         Route::get('/', [MushafController::class, 'index'])->name('index');
+         Route::get('/reader', [MushafController::class, 'reader'])->name('reader');
+         Route::get('/stream-file', [MushafController::class, 'streamMoshaf'])->name('stream');
+         Route::post('/save-page', [MushafController::class, 'savePage'])->name('save-page');
+    });
 
     // ════════════════════════════════════════════════
     // المراجعة
@@ -251,35 +333,24 @@ Route::middleware(['auth', 'verified', 'active_member'])
              [AdminDashboardController::class, 'index'])
              ->name('dashboard');
 
-        // المستخدمون
+        // المستخدمون للإدارة
         Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/',         [AdminUserController::class, 'index'])
-                 ->name('index');
-            Route::get('/{user}',   [AdminUserController::class, 'show'])
-                 ->name('show');
-            Route::get('/{user}/edit', [AdminUserController::class, 'edit'])
-                 ->name('edit');
-            Route::patch('/{user}', [AdminUserController::class, 'update'])
-                 ->name('update');
-            Route::delete('/{user}',[AdminUserController::class, 'destroy'])
-                 ->name('destroy');
+            Route::get('/',         [AdminUserController::class, 'index'])->name('index');
+            Route::get('/{user}',   [AdminUserController::class, 'show'])->name('show');
+            Route::get('/{user}/edit', [AdminUserController::class, 'edit'])->name('edit');
+            Route::patch('/{user}', [AdminUserController::class, 'update'])->name('update');
+            Route::delete('/{user}',[AdminUserController::class, 'destroy'])->name('destroy');
         });
 
-        // العائلات
+        // العائلات للإدارة
         Route::prefix('families')->name('families.')->group(function () {
-            Route::get('/',         [AdminFamilyController::class, 'index'])
-                 ->name('index');
-            Route::get('/{family}', [AdminFamilyController::class, 'show'])
-                 ->name('show');
-            Route::patch('/{family}',[AdminFamilyController::class,'update'])
-                 ->name('update');
-            Route::delete('/{family}',[AdminFamilyController::class,'destroy'])
-                 ->name('destroy');
-            Route::post('/{family}/members/{member}/remove',[AdminFamilyController::class, 'removeMember'])
-                ->name('members.remove')->middleware('family_admin');
+             Route::get('/',         [AdminFamilyController::class, 'index'])->name('index');
+             Route::get('/{family}', [AdminFamilyController::class, 'show'])->name('show');
+             Route::patch('/{family}',[AdminFamilyController::class, 'update'])->name('update');
+             Route::delete('/{family}',[AdminFamilyController::class,'destroy'])->name('destroy');
+             Route::post('/{family}/members/{member}/remove', [AdminFamilyController::class, 'removeMember'])->name('members.remove');
         });
     });
-
 });
 
 // ════════════════════════════════════════════════════════

@@ -3,6 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Khatma;
+use App\Models\JuzAllocation;
+Use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+use App\Models\Family;
+use App\Models\FamilyMember;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 
 class KhatmaController extends Controller
 {
@@ -38,10 +48,14 @@ class KhatmaController extends Controller
 
         return view('khatmas.index', compact('activeKhatmas', 'completedKhatmas', 'allKhatmas'));
     }
-
-    public function create()
+public function create()
     {
-        return view('khatmas.create');
+        // جلب جميع العائلات التي ينتمي إليها المستخدم الحالي ونشط فيها
+        $userFamilies = auth()->user()->families()
+            ->wherePivot('status', 'active')
+            ->get();
+
+        return view('khatmas.create', compact('userFamilies'));
     }
 
     public function store(Request $request)
@@ -51,6 +65,7 @@ class KhatmaController extends Controller
             'type'            => 'required|in:platform,family,individual,ramadan,weekly,monthly',
             'starts_at'       => 'nullable|date',
             'ends_at'         => 'nullable|date|after_or_equal:starts_at',
+            'family_id'       => 'nullable|required_if:type,family|exists:families,id', // التحقق من اختيار العائلة إذا كان النوع عائلي
         ], [
             'title.required' => 'يرجى إدخال عنوان الختمة.',
             'title.max' => 'عنوان الختمة طويل جداً.',
@@ -58,44 +73,85 @@ class KhatmaController extends Controller
             'starts_at.date' => 'تاريخ البدء غير صالح.',
             'ends_at.date' => 'تاريخ الانتهاء غير صالح.',
             'ends_at.after_or_equal' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
+            'family_id.required_if' => 'يرجى اختيار العائلة المستهدفة لهذه الختمة.',
+            'family_id.exists' => 'العائلة المختارة غير صالحة.',
         ]);
 
         $user = $request->user();
         $familyId = null;
+        $participantsIds = [];
 
-        if ($validated['type'] === \App\Models\Khatma::TYPE_FAMILY) {
-            $family = $user->families()->first();
+        // التحقق من الختمة العائلية وجلب أعضاء العائلة المختارة تحديداً
+        if ($validated['type'] === Khatma::TYPE_FAMILY) {
+            $familyId = $validated['family_id'];
+            
+            // التأكد من أن المستخدم ينتمي فعلاً لهذه العائلة لحماية النظام
+            $family = $user->families()->where('families.id', $familyId)->wherePivot('status', 'active')->first();
+            
             if ($family) {
-                $familyId = $family->id;
+                $participantsIds = $family->activeMembers()->pluck('users.id')->toArray();
+            } else {
+                return back()->withErrors(['family_id' => 'لا تملك صلاحية إنشاء ختمة في هذه العائلة.'])->withInput();
             }
         }
 
-        $khatma = \App\Models\Khatma::create([
+        // إذا كانت الختمة فردية
+        if ($validated['type'] === Khatma::TYPE_INDIVIDUAL) {
+            $participantsIds = [$user->id];
+        }
+
+        // التوزيع التلقائي مسموح فقط في الختمة العائلية
+        $isAutoDistribute = ($validated['type'] === Khatma::TYPE_FAMILY) ? $request->boolean('auto_distribute') : false;
+
+        $khatma = Khatma::create([
             'title'               => $validated['title'],
             'type'                => $validated['type'],
-            'status'              => \App\Models\Khatma::STATUS_ACTIVE,
+            'status'              => Khatma::STATUS_ACTIVE,
             'created_by'          => $user->id,
             'family_id'           => $familyId,
             'starts_at'           => $validated['starts_at'] ?? now(),
             'ends_at'             => $validated['ends_at'],
-            'auto_distribute'     => $request->boolean('auto_distribute'),
+            'auto_distribute'     => $isAutoDistribute,
             'completed_juz_count' => 0,
         ]);
 
         $juzAllocations = [];
-        $now = now();
-        for ($i = 1; $i <= 30; $i++) {
-            $juzAllocations[] = [
-                'khatma_id'   => $khatma->id,
-                'juz_number'  => $i,
-                'status'      => \App\Models\JuzAllocation::STATUS_AVAILABLE,
-            ];
-        }
-        
-        \App\Models\JuzAllocation::insert($juzAllocations);
+        $participantCount = count($participantsIds);
 
-        return redirect()->route('khatmas.index')
-                         ->with('success', 'تم إنشاء الختمة بنجاح 🎉');
+        for ($i = 1; $i <= 30; $i++) {
+            if ($isAutoDistribute && $participantCount > 0) {
+                $assignedUserId = $participantsIds[($i - 1) % $participantCount];
+                
+                $juzAllocations[] = [
+                    'khatma_id'   => $khatma->id,
+                    'juz_number'  => $i,
+                    'user_id'     => $assignedUserId,
+                    'status'      => JuzAllocation::STATUS_RESERVED,
+                    'claimed_at'  => now(),
+                    'deadline_at' => now()->addDays(7),
+                ];
+            } else {
+                $juzAllocations[] = [
+                    'khatma_id'   => $khatma->id,
+                    'juz_number'  => $i,
+                    'user_id'     => null,
+                    'status'      => JuzAllocation::STATUS_AVAILABLE,
+                    'claimed_at'  => null,
+                    'deadline_at' => null,
+                ];
+            }
+        }
+        try {
+            \App\Services\NotificationService::onKhatmaCreated($khatma);
+        } catch (\Exception $e) {
+            \Log::error('Notification error: ' . $e->getMessage());
+        }
+
+
+
+        JuzAllocation::insert($juzAllocations);
+
+        return redirect()->route('khatmas.index')->with('success', 'تم إنشاء الختمة بنجاح 🎉');
     }
 
     public function show(\App\Models\Khatma $khatma)

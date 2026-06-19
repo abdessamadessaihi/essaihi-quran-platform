@@ -1,328 +1,420 @@
 @extends('layouts.app')
+
 @section('title', 'لوحة التحكم')
+
+@push('styles')
+<style>
+/* ═══ DASHBOARD VARIABLES ═══════════════════════════════════ */
+:root {
+  --dash-green-deep: #022c22;
+  --dash-green-mid:  #064e3b;
+  --dash-green-lite: #059669;
+  --dash-gold:       #d97706;
+  --dash-gold-lite:  #f59e0b;
+  --dash-radius:     14px;
+  --dash-radius-sm:  10px;
+}
+
+/* ═══ BANNER (RESPONSIVE) ═══════════════════════════════════ */
+.dash-banner {
+  border-radius: 18px;
+  background: linear-gradient(140deg, #022c22 0%, #064e3b 60%, #0a6647 100%);
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0L60 30L30 60 L0 30Z' fill='none' stroke='%23fff' stroke-width='.8'/%3E%3C/svg%3E");
+  background-size: 60px;
+  opacity: .04; pointer-events: none;
+}
+
+.dash-banner-inner {
+  position: relative; z-index: 1;
+  display: flex; 
+  flex-direction: column; /* متوافق مع الهاتف افتراضياً */
+  gap: 16px;
+}
+
+@media(min-width: 640px) {
+  .dash-banner-inner { flex-direction: row; align-items: center; justify-content: space-between; }
+  .dash-banner { padding: 20px; }
+}
+
+.dash-banner-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.dash-banner-avatar {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  overflow: hidden; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.2);
+  background: rgba(16,185,129,.2);
+}
+
+.dash-banner-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.dash-banner-info { flex: 1; min-width: 0; }
+.dash-banner-hint { font-size: 11px; color: rgba(167,243,208,.8); margin-bottom: 3px; }
+.dash-banner-name { font-size: 18px; font-weight: 800; color: #fff; line-height: 1.2; }
+
+.dash-banner-role {
+  display: inline-block; margin-top: 5px; font-size: 10px; font-weight: 700;
+  padding: 3px 10px; border-radius: 100px;
+  background: rgba(255,255,255,.15); color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+}
+
+.dash-banner-cta {
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; /* توزيع متوازن على الهاتف */
+  gap: 12px;
+  width: 100%;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 12px;
+}
+
+@media(min-width: 640px) {
+  .dash-banner-cta { 
+    width: auto; border-top: none; padding-top: 0;
+    flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+}
+
+.dash-streak-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,.2);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px; padding: 6px 14px;
+}
+
+@media(min-width: 640px) {
+  .dash-streak-chip { flex-direction: column; gap: 2px; text-align: center; }
+}
+
+.dash-streak-num { font-family: 'Amiri', serif; font-size: 20px; font-weight: 700; color: var(--dash-gold-lite); line-height: 1; }
+.dash-streak-label { font-size: 9px; color: rgba(255,255,255,.5); }
+
+.dash-ward-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: 10px;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff; font-size: 12px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 4px 14px rgba(217,119,6,.4); transition: transform .2s;
+}
+
+/* ═══ STAT CARDS (MOBILE OPTIMIZED) ═════════════════════════ */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* كارتين بجانب بعض على الهاتف دائماً */
+  gap: 10px; margin-bottom: 16px;
+}
+
+@media(min-width: 768px) {
+  .dash-stats { grid-template-columns: repeat(4, 1fr); }
+}
+
+.dash-stat-card {
+  border-radius: var(--dash-radius); padding: 12px;
+  position: relative; overflow: hidden;
+}
+
+.dash-stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.dash-stat-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.5);
+}
+.dash-stat-icon img { width: 18px; height: 18px; object-fit: contain; }
+.dash-stat-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 100px; background: rgba(255,255,255,.5); }
+.dash-stat-val { font-family: 'Amiri', serif; font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+.dash-stat-label { font-size: 11px; font-weight: 700; margin-bottom: 1px; }
+.dash-stat-sub { font-size: 9px; opacity: .7; }
+
+/* ═══ NEW MOBILE-FRIENDLY STATISTICS ═════════════════════════ */
+.stat-progress-container {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* مؤشر التقدم الدائري البسيط للهاتف */
+.circle-stats-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;
+}
+
+.circle-stat-item {
+  background: var(--bg-soft, #f0fdf4); padding: 10px 6px; border-radius: var(--dash-radius-sm);
+  border: 1px solid var(--border, #e6f4ea);
+}
+
+.circle-stat-num {
+  font-family: 'Amiri', serif; font-size: 18px; font-weight: bold; color: var(--dash-green-mid);
+}
+
+.circle-stat-label { font-size: 10px; color: var(--text-m); margin-top: 2px; }
+
+/* شريط التقدم الخطي الشهري */
+.monthly-progress-card {
+  background: linear-gradient(to left, #f6fbf8, #ffffff);
+  border: 1px dashed var(--dash-green-lite);
+  border-radius: var(--dash-radius-sm); padding: 12px;
+}
+
+.monthly-bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+.monthly-bar-bg { width: 100%; height: 8px; background: #e2e8f0; border-radius: 100px; overflow: hidden; }
+.monthly-bar-fill { height: 100%; background: linear-gradient(to left, var(--dash-green-lite), #34d399); border-radius: 100px; }
+
+/* ═══ RESPONSIVE MAIN GRID ══════════════════════════════════ */
+.dash-grid {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+@media(min-width: 1024px) {
+  .dash-grid { display: grid; grid-template-columns: minmax(0, 2fr) 320px; }
+}
+
+/* ═══ SECTION CARD ══════════════════════════════════════════ */
+.dash-card {
+  background: var(--card, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: var(--dash-radius); overflow: hidden;
+}
+.dash-card-head { padding: 12px 16px; border-bottom: 1px solid var(--border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; }
+.dash-card-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); }
+.dash-card-title img { width: 20px; height: 20px; object-fit: contain; }
+.dash-card-body { padding: 14px; }
+
+/* ═══ WARD CARD ═════════════════════════════════════════════ */
+.ward-card-head { padding: 12px 16px; background: linear-gradient(135deg, #022c22, #064e3b); display: flex; align-items: center; gap: 10px; }
+.ward-card-head-text p:first-child { color: #fff; font-size: 13px; font-weight: 700; }
+.ward-card-head-text p:last-child { color: #6ee7b7; font-size: 10px; margin-top: 1px; }
+.ward-card-body { padding: 16px; text-align: center; }
+.ward-status-text { font-size: 12px; color: var(--text-m); margin-bottom: 12px; }
+.ward-action-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px;
+  background: linear-gradient(135deg, #0d6b52, #065f46); color: #fff; font-size: 12px; font-weight: 700; text-decoration: none;
+}
+
+/* ═══ REVIEWS ═══════════════════════════════════════════════ */
+.reviews-empty { padding: 16px; text-align: center; }
+.reviews-empty p { font-size: 12px; color: var(--text-m); }
+.reviews-empty a { display: inline-block; margin-top: 6px; font-size: 11px; color: var(--dash-green-lite); font-weight: 600; text-decoration: none; }
+
+/* ═══ LEADERBOARD ═══════════════════════════════════════════ */
+.lb-head { padding: 12px 16px; background: linear-gradient(135deg, #fffbeb, #fef3c7); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #fde68a; }
+.lb-head p { font-size: 13px; font-weight: 700; color: #78350f; }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border, #e2e8f0); }
+.lb-row:last-child { border-bottom: none; }
+.lb-medal { font-size: 16px; flex-shrink: 0; }
+.lb-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-pts { font-size: 11px; color: var(--text-m); }
+.lb-more { display: block; margin: 10px; text-align: center; padding: 8px; border-radius: 9px; background: #fffbeb; color: #92400e; font-size: 11px; font-weight: 700; text-decoration: none; border: 1px solid #fde68a; }
+
+/* ═══ QUICK LINKS (GRID FIX) ════════════════════════════════ */
+.quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 4px; }
+.quick-link { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 10px; text-decoration: none; }
+.quick-link img { width: 22px; height: 22px; object-fit: contain; }
+.quick-link span { font-size: 11px; font-weight: 600; color: var(--text); }
+
+/* ═══ AYAH BANNER ═══════════════════════════════════════════ */
+.ayah-banner {
+  margin-top: 16px; border-radius: 18px; padding: 24px 16px; text-align: center; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #031810, #042a1e);
+}
+.ayah-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 60px; opacity: .05;
+}
+.ayah-text { position: relative; font-family: 'Amiri', serif; font-size: clamp(1.1rem, 4.5vw, 1.5rem); color: rgba(255,255,255,.9); line-height: 1.8; margin-bottom: 6px; }
+.ayah-ref { position: relative; font-size: 10px; color: #f59e0b; opacity: .8; }
+
+.dash-side { display: flex; flex-direction: column; gap: 16px; }
+</style>
+@endpush
 
 @section('content')
 
-{{-- ═══ بانر الترحيب ═══ --}}
-<div class="relative overflow-hidden rounded-2xl mb-7"
-     style="background:linear-gradient(135deg,#022c22 0%,#064e3b 55%,#0a6647 100%);
-            min-height:140px">
+{{-- ═══ BANNER ═══════════════════════════════════════════════ --}}
+<div class="dash-banner">
+  <div class="dash-banner-inner">
+    
+    {{-- User Info Block --}}
+    <div class="dash-banner-user">
+      <div class="dash-banner-avatar">
+        @if(auth()->user()->avatar_url)
+          <img src="{{ asset(auth()->user()->avatar_url) }}" alt="{{ auth()->user()->name }}">
+        @elseif(auth()->user()->avatar && Storage::disk('public')->exists(auth()->user()->avatar))
+          <img src="{{ asset('storage/' . auth()->user()->avatar) }}" alt="{{ auth()->user()->name }}">
+        @else
+          <img src="{{ asset('images/user.png') }}" alt="{{ auth()->user()->name }}" style="padding:6px">
+        @endif
+      </div>
 
-  <div class="absolute inset-0 opacity-5"
-       style="background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M40 0L80 40L40 80L0 40Z' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E\");background-size:80px">
-  </div>
-
-  <div class="absolute top-0 left-0 w-56 h-56 rounded-full opacity-15 pointer-events-none"
-       style="background:radial-gradient(circle,#10b981,transparent);
-              transform:translate(-30%,-30%)"></div>
-
-  <div class="absolute bottom-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"
-       style="background:radial-gradient(circle,#d97706,transparent);
-              transform:translate(30%,30%)"></div>
-
-  <div class="relative z-10 p-7 flex flex-col sm:flex-row
-              items-start sm:items-center justify-between gap-5">
-
-    <div class="flex items-center gap-4">
-
-      {{-- Avatar image --}}
-<div class="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0
-            border-2 border-amber-400/40 bg-amber-500/20">
-
-    <img src="{{ asset('images/user.png') }}"
-         alt="User Avatar"
-         class="w-full h-full object-cover">
-</div>
-
-      
-      <div>
-        <p style="color:rgba(167,243,208,.80);font-size:12px;margin-bottom:3px">
-          {{ now()->hour ? " أهلا بك مجددا في رحاب القرآن " : 'اشتاق لك القرآن، مرحبا بك '  }}
+      <div class="dash-banner-info">
+        <p class="dash-banner-hint">
+          {{ now()->hour < 12 ? 'أهلاً بك في رحاب القرآن' : 'اشتاق لك القرآن، مرحباً' }}
         </p>
-
-        <h1 style="color:#fff;font-size:1.4rem;font-weight:700;margin-bottom:4px">
-          {{ auth()->user()->name }}
-        </h1>
-
-        <span style="font-size:11px;padding:3px 12px;border-radius:100px;font-weight:600"
-              class="inline-block"
-              style="background:rgba(255, 254, 252, 0.2);color:hsl(46, 71%, 20%);
-                     border:1px solid rgba(255, 255, 255, 0.3)">
-          @if(auth()->user()->isSuperAdmin())
-            المدير العام
-          @elseif(auth()->user()->isFamilyAdmin())
-            مسؤول العائلة
-          @else
-            عضو العائلة
+        <p class="dash-banner-name">{{ auth()->user()->name }}</p>
+        <span class="dash-banner-role">
+          @if(auth()->user()->isSuperAdmin()) المدير العام
+          @elseif(auth()->user()->isFamilyAdmin()) مسؤول العائلة
+          @else عضو العائلة
           @endif
         </span>
       </div>
     </div>
 
-    <div class="flex items-center gap-3 flex-wrap">
-      <div style="text-align:center;padding:0 16px;
-                  border-left:1px solid rgba(255, 255, 255, 0.15)">
-        <p style="font-family:'Amiri',serif;font-size:1.5rem;
-                  font-weight:700;color:#f59e0b;line-height:1">
-          {{ $dashboardStats['current_streak'] }}
-        </p>
-        <p style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px">
-          يوم متتالي 
-        </p>
+    {{-- Call to Action Block (Stacked on Mobile, Row on Desktop) --}}
+    <div class="dash-banner-cta">
+      <div class="dash-streak-chip">
+        <div class="dash-streak-num">{{ $dashboardStats['current_streak'] }}</div>
+        <div class="dash-streak-label">يوم متتالي 🔥</div>
       </div>
-
-      <a href="{{ route('ward.index') }}"
-         style="display:inline-flex;align-items:center;gap:8px;
-                padding:11px 22px;border-radius:12px;
-                background:linear-gradient(135deg,#d97706,#b45309);
-                color:#fff;font-size:13.5px;font-weight:700;
-                text-decoration:none;
-                box-shadow:0 6px 20px rgba(217,119,6,.40);
-                transition:transform .2s,box-shadow .2s"
-         onmouseover="this.style.transform='translateY(-2px)'"
-         onmouseout="this.style.transform='translateY(0)'">
-        🌙 {{ $todayWard?->is_completed ? 'ورد اليوم مكتمل' : 'سجّل ورد اليوم' }}
+      <a href="{{ route('ward.index') }}" class="dash-ward-btn">
+        🌙 {{ $todayWard?->is_completed ? 'مكتمل ✓' : 'ورد اليوم' }}
       </a>
     </div>
 
   </div>
 </div>
-{{-- ═══ بطاقات الإحصاء ═══ --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-  @foreach([
-    ['icon'=>'day.png','bg'=>'linear-gradient(135deg,#fff7ed,#ffedd5)',
-     'border'=>'#fed7aa','value'=>$dashboardStats['current_streak'],'label'=>'أيام متتالية',
-     'sub'=>'أطول سلسلة: '.$dashboardStats['longest_streak'],'vcolor'=>'#ea580c'],
-    ['icon'=>'quran.png','bg'=>'linear-gradient(135deg,#ecfdf5,#d1fae5)',
-     'border'=>'#a7f3d0','value'=>$dashboardStats['completed_wards_count'],'label'=>'ورد مكتمل',
-     'sub'=>'إجمالي الأوراد','vcolor'=>'#059669'],
-    ['icon'=>'target2.png','bg'=>'linear-gradient(135deg,#eff6ff,#dbeafe)',
-     'border'=>'#bfdbfe','value'=>$dashboardStats['memorized_juz_estimate'],'label'=>'جزء محفوظ',
-     'sub'=>'من أصل ٣٠ جزءاً','vcolor'=>'#2563eb'],
-    ['icon'=>'homeStatistics3.png','bg'=>'linear-gradient(135deg,#fdf4ff,#fae8ff)',
-     'border'=>'#e9d5ff','value'=>$dashboardStats['total_xp'],'label'=>'نقطة XP',
-     'sub'=>'المستوى: '.$dashboardStats['level'],'vcolor'=>'#9333ea'],
-  ] as $s)
-  <div style="background:{{ $s['bg'] }};border:1px solid {{ $s['border'] }};
-              border-radius:16px;padding:22px 18px;
-              transition:box-shadow .2s,transform .2s;cursor:default"
-       onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 28px rgba(0,0,0,.08)'"
-       onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-    <div style="display:flex;align-items:center;
-                justify-content:space-between;margin-bottom:14px">
-      <img src="{{ asset('images/'.$s['icon']) }}"
-     alt="{{ $s['label'] }}"
-     style="
-        width:70px;
-        height:70px;
-        object-fit:contain;
-        display:block;
-        margin:0 auto;
-     ">
-      <span style="font-size:11px;padding:3px 9px;border-radius:100px;
-                   background:rgba(255,255,255,.6);color:{{ $s['vcolor'] }};
-                   font-weight:600">جديد</span>
+
+{{-- ═══ STAT CARDS ════════════════════════════════════════════ --}}
+<div class="dash-stats">
+  
+  {{-- الأيام --}}
+  <div class="dash-stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1px solid #fed7aa">
+    <div class="dash-stat-top">
+      <div class="dash-stat-icon"><img src="{{ asset('images/day.png') }}" alt=""></div>
+      <span class="dash-stat-badge" style="color:#ea580c">سلسلة</span>
     </div>
-    <p style="font-family:'Amiri',serif;font-size:2rem;font-weight:700;
-              color:{{ $s['vcolor'] }};line-height:1;margin-bottom:5px">
-      {{ $s['value'] }}
-    </p>
-    <p style="font-size:13px;font-weight:700;color:#1a2e25;margin-bottom:2px">
-      {{ $s['label'] }}
-    </p>
-    <p style="font-size:11px;color:#6b7280">{{ $s['sub'] }}</p>
+    <div class="dash-stat-val" style="color:#ea580c">{{ $dashboardStats['current_streak'] }}</div>
+    <div class="dash-stat-label" style="color:#7c2d12">أيام متتالية</div>
+    <div class="dash-stat-sub" style="color:#9a3412">أطول: {{ $dashboardStats['longest_streak'] }}</div>
   </div>
-  @endforeach
+
+  {{-- الأوراد --}}
+  <div class="dash-stat-card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0">
+    <div class="dash-stat-top">
+      <div class="dash-stat-icon"><img src="{{ asset('images/quran.png') }}" alt=""></div>
+      <span class="dash-stat-badge" style="color:#059669">مكتمل</span>
+    </div>
+    <div class="dash-stat-val" style="color:#059669">{{ $dashboardStats['completed_wards_count'] }}</div>
+    <div class="dash-stat-label" style="color:#064e3b">ورد مكتمل</div>
+    <div class="dash-stat-sub" style="color:#065f46">إجمالي أورادك</div>
+  </div>
+
+  {{-- الحفظ --}}
+  <div class="dash-stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe">
+    <div class="dash-stat-top">
+      <div class="dash-stat-icon"><img src="{{ asset('images/target2.png') }}" alt=""></div>
+      <span class="dash-stat-badge" style="color:#2563eb">القرآن</span>
+    </div>
+    <div class="dash-stat-val" style="color:#2563eb">{{ $dashboardStats['memorized_juz_estimate'] }}</div>
+    <div class="dash-stat-label" style="color:#1e3a8a">جزء محفوظ</div>
+    <div class="dash-stat-sub" style="color:#1d4ed8">من أصل ٣٠ جزءاً</div>
+  </div>
+
+  {{-- النقاط --}}
+  <div class="dash-stat-card" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);border:1px solid #e9d5ff">
+    <div class="dash-stat-top">
+      <div class="dash-stat-icon"><img src="{{ asset('images/homeStatistics3.png') }}" alt=""></div>
+      <span class="dash-stat-badge" style="color:#9333ea">XP</span>
+    </div>
+    <div class="dash-stat-val" style="color:#9333ea">{{ $dashboardStats['total_xp'] }}</div>
+    <div class="dash-stat-label" style="color:#581c87">نقطة خبرة</div>
+    <div class="dash-stat-sub" style="color:#6b21a8">المستوى: {{ $dashboardStats['level'] }}</div>
+  </div>
+
 </div>
 
-{{-- ═══ المحتوى الرئيسي ═══ --}}
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+{{-- ═══ MAIN GRID ══════════════════════════════════════════════ --}}
+<div class="dash-grid">
 
-  {{-- ── عمود (2/3) ── --}}
-  <div class="xl:col-span-2 flex flex-col gap-6">
-
-    {{-- شبكة الختمة ─────────────────────────────────── --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-title">
-    <img src="{{ asset('images/quran.png') }}"
-     alt="Idée"
-     style="width:30px;height:30px;object-fit:contain;
-            display:flex;align-items:center;">          الختمات النشطة
-        </div>
-        <a href="{{ route('khatmas.index') }}"
-           style="font-size:12.5px;color:#059669;text-decoration:none;
-                  font-weight:600;display:flex;align-items:center;gap:4px">
-          عرض الكل
-          <svg width="14" height="14" fill="none" stroke="currentColor"
-               stroke-width="2.2" viewBox="0 0 24 24">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
-      </div>
-      <div class="card-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          @if($activeKhatmas->isEmpty())
-            <p style="font-size:13px;color:var(--text-m)">
-              لا توجد ختمات نشطة —
-              <a href="{{ route('khatmas.create') }}"
-                 style="color:#059669;font-weight:600;text-decoration:none">
-                ابدأ ختمة الآن
-              </a>
-            </p>
-          @else
-            <div style="display:flex;flex-direction:column;gap:6px">
-              @foreach($activeKhatmas as $khatma)
-                <a href="{{ route('khatmas.show', $khatma) }}"
-                   style="color:var(--text);font-size:13px;font-weight:700;text-decoration:none">
-                  {{ $khatma->title }}
-                  <span style="color:#059669;font-size:12px">
-                    {{ $khatma->completion_percentage }}٪
-                  </span>
-                </a>
-              @endforeach
-            </div>
-          @endif
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            @foreach([
-              ['#cbd5e1','متاح'],['#93c5fd','محجوز'],
-              ['#fcd34d','قيد القراءة'],['#6ee7b7','مكتمل'],
-            ] as [$c,$l])
-            <div style="display:flex;align-items:center;gap:5px">
-              <div style="width:12px;height:12px;border-radius:3px;
-                          background:{{ $c }}"></div>
-              <span style="font-size:11px;color:var(--text-m)">{{ $l }}</span>
-            </div>
-            @endforeach
-          </div>
-        </div>
-
-        {{-- شبكة ٣٠ جزء --}}
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
-          @for($i = 1; $i <= 30; $i++)
-          <div style="aspect-ratio:1;border-radius:12px;
-                      display:flex;flex-direction:column;
-                      align-items:center;justify-content:center;
-                      background:#f8fafc;
-                      border:1.5px solid #e2e8f0;
-                      cursor:pointer;transition:all .2s;
-                      font-size:13px;font-weight:600;color:#64748b"
-               onmouseover="this.style.transform='scale(1.06)';
-                             this.style.boxShadow='0 4px 14px rgba(0,0,0,.1)'"
-               onmouseout="this.style.transform='scale(1)';
-                            this.style.boxShadow='none'"
-               title="الجزء {{ $i }}">
-            <span>{{ $i }}</span>
-            <span style="font-size:9px;opacity:.5;margin-top:2px">جزء</span>
-          </div>
-          @endfor
-        </div>
-      </div>
-    </div>
-
-    {{-- Heatmap ────────────────────────────────────────── --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-title">
-    <img src="{{ asset('images/calendar.png') }}"
-     alt="Idée"
-     style="width:30px;height:30px;object-fit:contain;
-            display:flex;align-items:center;">
-                      <div>
-            خريطة الالتزام السنوية
-            <p style="font-size:11px;color:var(--text-m);font-weight:400;margin-top:1px">
-              {{ now()->year }} — سجّل يومياً لبناء سلسلتك
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="card-body" style="overflow-x:auto">
-        {{-- أسماء الأيام --}}
-        <div style="display:flex;gap:4px;margin-bottom:4px;
-                    padding-right:24px">
-          @foreach(['أح','إث','ثل','أر','خم','جم','سب'] as $d)
-          <div style="width:12px;font-size:8px;color:var(--text-m);
-                      text-align:center;flex-shrink:0">{{ $d }}</div>
-          @endforeach
-        </div>
-        <div style="display:flex;gap:4px;min-width:max-content">
-          {{-- الأشهر --}}
-          @foreach(['يناير','فبراير','مارس','أبريل','مايو','يونيو',
-                    'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
-                   as $idx => $month)
+  {{-- ── عمود الإحصائيات الجديد البديل للخريطة السنوية المعقدة ── --}}
+  <div>
+    <div class="dash-card">
+      <div class="dash-card-head">
+        <div class="dash-card-title">
+          <img src="{{ asset('images/calendar.png') }}" alt="">
           <div>
-            <div style="font-size:8px;color:var(--text-m);
-                        margin-bottom:4px;text-align:center">
-              {{ $month }}
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(4,12px);
-                        gap:3px">
-              @for($d = 0; $d < 28; $d++)
-              <div style="width:12px;height:12px;border-radius:2px;
-                          background:#e8f5ef;transition:background .15s;
-                          cursor:pointer"
-                   onmouseover="this.style.background='#059669'"
-                   onmouseout="this.style.background='#e8f5ef'"
-                   title="لا توجد قراءة"></div>
-              @endfor
-            </div>
+            خلاصة الالتزام والإنجاز الإحصائي
+            <p style="font-size:10px;color:var(--text-m);font-weight:400;margin-top:1px">
+              متابعة حية لبناء عاداتك القرآنية
+            </p>
           </div>
-          @endforeach
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;
-                    margin-top:10px">
-          <span style="font-size:11px;color:var(--text-m)">أقل</span>
-          @foreach(['#d1fae5','#6ee7b7','#34d399','#059669'] as $c)
-          <div style="width:12px;height:12px;border-radius:2px;
-                      background:{{ $c }}"></div>
-          @endforeach
-          <span style="font-size:11px;color:var(--text-m)">أكثر</span>
         </div>
       </div>
-    </div>
+      <div class="dash-card-body">
+        
+        <div class="stat-progress-container">
+          
+          {{-- الإحصاءات السريعة المصغرة والموزعة كخلايا ذكية للهاتف --}}
+          <div class="circle-stats-row">
+            <div class="circle-stat-item">
+              <div class="circle-stat-num">{{ $dashboardStats['current_streak'] }} يوم</div>
+              <div class="circle-stat-label">الالتزام الحالي</div>
+            </div>
+            <div class="circle-stat-item">
+              <div class="circle-stat-num">
+                {{ $dashboardStats['completed_wards_count'] > 0 ? round(($dashboardStats['completed_wards_count'] / 30) * 100) : 0 }}%
+              </div>
+              <div class="circle-stat-label">نسبة الختمة</div>
+            </div>
+            <div class="circle-stat-item">
+              <div class="circle-stat-num">{{ $dashboardStats['level'] }}</div>
+              <div class="circle-stat-label">الرتبة الحالية</div>
+            </div>
+          </div>
 
+          {{-- مؤشر تقدم الشهر الحالي خطي ونظيف جداً على شاشة الجوال --}}
+          <div class="monthly-progress-card">
+            <div class="monthly-bar-label">
+              <span class="font-bold text-emerald-900">📊 نسبة إنجاز ورد الشهر الحالي</span>
+              <span class="font-mono text-emerald-600 font-bold">
+                {{ min(100, $dashboardStats['completed_wards_count'] * 3) }}%
+              </span>
+            </div>
+            <div class="monthly-bar-bg">
+              <div class="monthly-bar-fill" style="width: {{ min(100, $dashboardStats['completed_wards_count'] * 3) }}%"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
   </div>
 
-  {{-- ── الشريط الجانبي (1/3) ── --}}
-  <div style="display:flex;flex-direction:column;gap:20px">
+  {{-- ── عمود البطاقات الجانبية (يتراصف تحت الإحصائيات في الهاتف تلقائياً) ── --}}
+  <div class="dash-side">
 
     {{-- الورد اليومي --}}
-    <div class="card">
-      <div style="padding:18px 20px;
-                  background:linear-gradient(135deg,#022c22,#064e3b);
-                  display:flex;align-items:center;gap:12px">
-        <span style="font-size:24px">🌙</span>
-        <div>
-          <p style="color:#fff;font-size:14px;font-weight:700">
-            الورد اليومي
-          </p>
-          <p style="color:#6ee7b7;font-size:11px;margin-top:2px">
-            {{ now()->locale('ar')->isoFormat('dddd، D MMM') }}
-          </p>
+    <div class="dash-card">
+      <div class="ward-card-head">
+        <span style="font-size:20px">🌙</span>
+        <div class="ward-card-head-text">
+          <p>الورد اليومي</p>
+          <p>{{ now()->locale('ar')->isoFormat('dddd، D MMM') }}</p>
         </div>
       </div>
-      <div style="padding:24px;text-align:center">
-        
-        <p style="font-size:13px;color:var(--text-m);margin-bottom:14px">
+      <div class="ward-card-body">
+        <p class="ward-status-text">
           @if($todayWard?->is_completed)
-            اكتمل ورد اليوم بحمد الله
+            اكتمل ورد اليوم بحمد الله ✓
           @elseif($todayWard)
             إنجاز اليوم: {{ $todayWard->adherence_pct }}٪
           @else
             لم تسجّل ورداً اليوم بعد
           @endif
         </p>
-        <a href="{{ route('ward.index') }}"
-           style="display:inline-flex;align-items:center;gap:7px;
-                  padding:10px 22px;border-radius:10px;
-                  background:linear-gradient(135deg,#0d6b52,#065f46);
-                  color:#fff;font-size:13.5px;font-weight:700;
-                  text-decoration:none;
-                  box-shadow:0 4px 16px rgba(13,107,82,.35)">
-          {{ $todayWard ? 'فتح الورد' : 'ابدأ الورد الآن' }}
-          <svg width="15" height="15" fill="none" stroke="currentColor"
-               stroke-width="2.2" viewBox="0 0 24 24">
+        <a href="{{ route('ward.index') }}" class="ward-action-btn">
+          {{ $todayWard ? 'فتح الورد' : 'ابدأ الآن' }}
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transform: scaleX(-1); margin-right:4px;">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </a>
@@ -330,116 +422,65 @@
     </div>
 
     {{-- مراجعات اليوم --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-title">
-<img src="{{ asset('images/brain.png') }}"
-     alt="Idée"
-     style="width:24px;height:24px;object-fit:contain;
-            display:flex;align-items:center;">          مراجعات اليوم
+    <div class="dash-card">
+      <div class="dash-card-head">
+        <div class="dash-card-title">
+          <img src="{{ asset('images/brain.png') }}" alt="">
+          مراجعات اليوم
         </div>
-        <span style="font-size:11px;padding:2px 9px;border-radius:100px;
-                     background:#eff6ff;color:#1d4ed8;font-weight:700">
-          ٠
-        </span>
+        <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:#eff6ff;color:#1d4ed8;font-weight:700">٠</span>
       </div>
-      <div style="padding:28px;text-align:center">
-        <p style="font-size:12.5px;color:var(--text-m)">
-          لا توجد مراجعات مجدولة اليوم
-        </p>
-        <a href="{{ route('memorizations.index') }}"
-           style="display:inline-block;margin-top:10px;
-                  font-size:12.5px;color:#059669;font-weight:600;
-                  text-decoration:none">
-          + إضافة محفوظات
-        </a>
+      <div class="reviews-empty">
+        <p>لا توجد مراجعات مجدولة اليوم</p>
+        <a href="{{ route('memorizations.index') }}">+ إضافة محفوظات</a>
       </div>
     </div>
-
-    {{-- لوحة الشرف --}}
-    <div class="card" style="border-color:#fde68a">
-      <div style="padding:14px 18px;
-                  background:linear-gradient(135deg,#fffbeb,#fef3c7);
-                  display:flex;align-items:center;gap:10px;
-                  border-bottom:1px solid #fde68a">
-        <span style="font-size:20px">🏆</span>
-        <p style="font-size:13.5px;font-weight:700;color:#78350f">
-          لوحة الشرف
-        </p>
-      </div>
-      <div style="padding:14px 16px">
-        @foreach([
-          ['🥇','#92400e','أحمد السيحي','١٢٠٠ نقطة'],
-          ['🥈','#6b7280','محمد السيحي','٩٨٠ نقطة'],
-          ['🥉','#92400e','فاطمة السيحي','٨٤٠ نقطة'],
-        ] as [$medal,$mc,$name,$pts])
-        <div style="display:flex;align-items:center;gap:12px;
-                    padding:10px 6px;
-                    border-bottom:1px solid var(--border)">
-          <span style="font-size:20px">{{ $medal }}</span>
-          <div style="flex:1;min-width:0">
-            <p style="font-size:13px;font-weight:600;
-                      color:var(--text);white-space:nowrap;
-                      overflow:hidden;text-overflow:ellipsis">
-              {{ $name }}
-            </p>
-            <p style="font-size:11px;color:var(--text-m)">{{ $pts }}</p>
-          </div>
-        </div>
-        @endforeach
-        <a href="{{ route('leaderboard') }}"
-           style="display:block;margin-top:12px;text-align:center;
-                  padding:9px;border-radius:10px;
-                  background:#fffbeb;color:#92400e;
-                  font-size:12px;font-weight:700;text-decoration:none;
-                  border:1px solid #fde68a;
-                  transition:background .18s"
-           onmouseover="this.style.background='#fef3c7'"
-           onmouseout="this.style.background='#fffbeb'">
-          عرض الترتيب الكامل ←
-        </a>
-      </div>
+{{-- لوحة الشرف --}}
+<div class="dash-card" style="border-color:#fde68a">
+  <div class="lb-head">
+    <span style="font-size:16px">🏆</span>
+    <p>لوحة الشرف العائلية</p>
+  </div>
+  @forelse($topUsers as $idx => $u)
+  <div class="lb-row">
+    <span class="lb-medal">
+      {{ ['🥇','🥈','🥉'][$idx] ?? '🏅' }}
+    </span>
+    <div style="flex:1;min-width:0">
+      <p class="lb-name">{{ $u->name }}</p>
+      @if($u->id === auth()->id())
+      <span style="font-size:9px;padding:1px 5px;border-radius:100px;
+                   background:#059669;color:#fff">أنت</span>
+      @endif
     </div>
+    <span class="lb-pts">{{ number_format($u->total_xp) }} نقطة</span>
+  </div>
+  @empty
+  <div style="padding:20px;text-align:center;color:var(--text-m);font-size:13px">
+    لا توجد بيانات بعد
+  </div>
+  @endforelse
+  <a href="{{ route('leaderboard') }}" class="lb-more">عرض الترتيب الكامل ←</a>
+</div>
 
     {{-- روابط سريعة --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-title">
-<img src="{{ asset('images/link.png') }}"
-     alt="Idée"
-     style="width:24px;height:24px;object-fit:contain;
-            display:flex;align-items:center;">          روابط سريعة
+    <div class="dash-card">
+      <div class="dash-card-head">
+        <div class="dash-card-title">
+          <img src="{{ asset('images/link.png') }}" alt="">
+          روابط سريعة
         </div>
       </div>
-      <div style="padding:14px;
-                  display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="quick-grid">
         @foreach([
           ['families.index','muslim.png','العائلات','#ecfdf5','#a7f3d0'],
           ['khatmas.create','quran.png','ختمة جديدة','#fffbeb','#fde68a'],
-          ['memorizations.index','morajaa.png','الحفظ','#eff6ff','#bfdbfe'],
+          ['memorizations.index','injaz.png','الحفظ','#eff6ff','#bfdbfe'],
           ['revisions.index','brain.png','المراجعة','#fdf4ff','#e9d5ff'],
         ] as [$route,$icon,$label,$bg,$border])
-        <a href="{{ route($route) }}"
-           style="display:flex;flex-direction:column;
-                  align-items:center;gap:7px;padding:14px 10px;
-                  border-radius:12px;background:{{ $bg }};
-                  border:1px solid {{ $border }};
-                  text-decoration:none;transition:transform .18s,box-shadow .18s"
-           onmouseover="this.style.transform='translateY(-2px)';
-                        this.style.boxShadow='0 4px 14px rgba(0,0,0,.07)'"
-           onmouseout="this.style.transform='translateY(0)';
-                       this.style.boxShadow='none'">
-          <img src="{{ asset('images/'.$icon) }}"
-     alt="{{ $label }}"
-     style="
-        width:28px;
-        height:28px;
-        object-fit:contain;
-        display:block;
-        margin:0 auto;
-     ">
-          <span style="font-size:12px;font-weight:600;
-                       color:var(--text)">{{ $label }}</span>
+        <a href="{{ route($route) }}" class="quick-link" style="background:{{ $bg }}; border:1px solid {{ $border }}">
+          <img src="{{ asset('images/'.$icon) }}" alt="{{ $label }}">
+          <span>{{ $label }}</span>
         </a>
         @endforeach
       </div>
@@ -448,21 +489,10 @@
   </div>
 </div>
 
-{{-- ═══ آية قرآنية ═══ --}}
-<div style="margin-top:28px;border-radius:18px;padding:36px;
-            text-align:center;position:relative;overflow:hidden;
-            background:linear-gradient(135deg,#031810,#042a1e)">
-  <div style="position:absolute;inset:0;opacity:.05;
-              background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E\");
-              background-size:60px"></div>
-  <p style="position:relative;font-family:'Amiri',serif;
-            font-size:1.7rem;color:rgba(255,255,255,.90);
-            line-height:2;margin-bottom:8px">
-    ﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾
-  </p>
-  <p style="position:relative;font-size:12.5px;color:#f59e0b;opacity:.80">
-    سورة المزمل — الآية ٤
-  </p>
+{{-- ═══ AYAH BANNER ═══════════════════════════════════════════ --}}
+<div class="ayah-banner">
+  <p class="ayah-text">﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾</p>
+  <p class="ayah-ref">سورة المزمل — الآية ٤</p>
 </div>
 
 @endsection

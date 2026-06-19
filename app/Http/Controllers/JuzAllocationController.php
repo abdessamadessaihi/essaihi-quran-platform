@@ -2,53 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JuzAllocation;
+use App\Models\Khatma;
+use App\Models\XpTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Services\NotificationService;
 
 class JuzAllocationController extends Controller
 {
-    public function claim(Request $request, \App\Models\Khatma $khatma, $juzNumber)
+    public function claim(Request $request, Khatma $khatma, int $juz)
     {
-        $allocation = $khatma->juzAllocations()->where('juz_number', $juzNumber)->firstOrFail();
-        
-        if ($allocation->status !== \App\Models\JuzAllocation::STATUS_AVAILABLE) {
-            return back()->with('error', 'عذراً، هذا الجزء غير متاح للحجز.');
+        // Mutex — منع الحجز المزدوج
+        $allocation = DB::transaction(function () use ($khatma, $juz) {
+            $alloc = JuzAllocation::where('khatma_id', $khatma->id)
+                ->where('juz_number', $juz)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($alloc->status !== 'available') {
+                return null;
+            }
+
+            $alloc->update([
+                'user_id'    => Auth::id(),
+                'status'     => 'reserved',
+                'claimed_at' => now(),
+                'deadline_at'=> now()->addDays(7),
+            ]);
+
+            return $alloc;
+        });
+
+        if (!$allocation) {
+            return back()->with('error', 'هذا الجزء محجوز بالفعل، اختر جزءاً آخر.');
         }
 
-        $allocation->update([
-            'user_id'    => $request->user()->id,
-            'status'     => \App\Models\JuzAllocation::STATUS_RESERVED,
-            'claimed_at' => now(),
-        ]);
-
-        return back()->with('success', 'تم حجز الجزء بنجاح 🎉');
+        return back()->with('success', "تم حجز الجزء {$juz} بنجاح 🎉");
     }
 
-    public function start(Request $request, \App\Models\Khatma $khatma, $juzNumber)
+    public function start(Request $request, Khatma $khatma, int $juz)
     {
-        $allocation = $khatma->juzAllocations()->where('juz_number', $juzNumber)->firstOrFail();
-        
-        if ($allocation->user_id !== $request->user()->id) {
-            return back()->with('error', 'لا تملك صلاحية بدء قراءة هذا الجزء.');
-        }
+        $alloc = JuzAllocation::where('khatma_id', $khatma->id)
+            ->where('juz_number', $juz)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
-        $allocation->update([
-            'status'     => \App\Models\JuzAllocation::STATUS_READING,
+        $alloc->update([
+            'status'     => 'reading',
             'started_at' => now(),
         ]);
 
-        return back()->with('success', 'تم بدء القراءة، تقبل الله منا ومنكم 📖');
+        return back()->with('success', "بارك الله فيك! بدأت قراءة الجزء {$juz} 📖");
     }
 
-    public function complete(Request $request, \App\Models\Khatma $khatma, $juzNumber)
+    public function complete(Request $request, Khatma $khatma, int $juz)
     {
-        $allocation = $khatma->juzAllocations()->where('juz_number', $juzNumber)->firstOrFail();
-        
-        if ($allocation->user_id !== $request->user()->id) {
-            return back()->with('error', 'لا تملك صلاحية تأكيد قراءة هذا الجزء.');
-        }
+        $alloc = JuzAllocation::where('khatma_id', $khatma->id)
+            ->where('juz_number', $juz)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
-        $allocation->markAsCompleted();
+        $alloc->markAsCompleted();
 
-        return back()->with('success', 'أحسنت! اكتملت قراءة الجزء، تقبل الله سعيك 🎊');
+        // منح XP
+        XpTransaction::award(
+            Auth::id(), 100,
+            XpTransaction::SOURCE_JUZ,
+            $alloc->id,
+            "إكمال الجزء {$juz} من ختمة: {$khatma->title}"
+        );
+        // تحديث عدد الأجزاء المكتملة في الختمة$khatma->refresh();
+            NotificationService::onJuzCompleted($khatma, $juz, auth()->user());
+        return back()->with('success', "تقبل الله منكم. اكتمل الجزء {$juz} بحمد الله 🎉");
     }
 }

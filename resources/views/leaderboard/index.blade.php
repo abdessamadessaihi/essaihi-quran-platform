@@ -7,10 +7,10 @@
 <div class="page-header" style="margin-bottom:32px">
   <div class="page-header-ornament">
     <div class="ornament-line"></div>
-    <span class="ornament-icon">✦</span>
-    <div class="ornament-line"></div>
+ <img src="{{ asset('images/zakhrafa.png') }}" alt="زخرفة"
+         style="width:56px;height:56px;object-fit:contain;opacity:.85"/>    <div class="ornament-line"></div>
   </div>
-  <h1 class="page-title">لوحة الشرف🏆</h1>
+  <h1 class="page-title">لوحة الشرف</h1>
   <p class="page-subtitle">وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ — تابع ترتيبك بين أهل القرآن وتقدم في درجات الطاعة</p>
 </div>
 
@@ -92,7 +92,7 @@
               {{ $category === 'xp' ? 'نقطة' : ($category === 'streak' ? 'يوم' : ($category === 'memorization' ? 'آية' : 'ورد')) }}
             </span>
           </div>
-          <div class="podium-block">٢</div>
+          <div class="podium-block">2</div>
         </div>
         @endif
 
@@ -111,7 +111,7 @@
               {{ $category === 'xp' ? 'نقطة' : ($category === 'streak' ? 'يوم' : ($category === 'memorization' ? 'آية' : 'ورد')) }}
             </span>
           </div>
-          <div class="podium-block">١</div>
+          <div class="podium-block">1</div>
         </div>
 
         {{-- المركز الثالث --}}
@@ -130,7 +130,7 @@
               {{ $category === 'xp' ? 'نقطة' : ($category === 'streak' ? 'يوم' : ($category === 'memorization' ? 'آية' : 'ورد')) }}
             </span>
           </div>
-          <div class="podium-block">٣</div>
+          <div class="podium-block">3</div>
         </div>
         @endif
 
@@ -306,10 +306,10 @@
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         @foreach([
-          ['🌙 الورد اليومي', 'كسب 100 نقطة عند إتمام ورد القراءة اليومي بالكامل.'],
-          ['📖 حفظ آيات جديدة', 'كسب 10 نقاط عن كل آية تقوم بتسجيل حفظها.'],
-          ['🧠 مراجعة المحفوظ', 'كسب 50 نقطة عند الانتهاء من مراجعة مجدولة بنجاح.'],
-          ['🏆 سلاسل الأيام', 'مكافآت XP إضافية تتضاعف مع استمرار سلسلة أيامك المتتالية.'],
+          [' الورد اليومي', 'كسب 100 نقطة عند إتمام ورد القراءة اليومي بالكامل.'],
+          [' حفظ آيات جديدة', 'كسب 10 نقاط عن كل آية تقوم بتسجيل حفظها.'],
+          ['مراجعة المحفوظ', 'كسب 50 نقطة عند الانتهاء من مراجعة مجدولة بنجاح.'],
+          [' سلاسل الأيام', 'مكافآت XP إضافية تتضاعف مع استمرار سلسلة أيامك المتتالية.'],
         ] as [$title, $desc])
         <div style="padding:10px;border-radius:10px;background:var(--bg);border:1px solid var(--border)">
           <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">{{ $title }}</p>
@@ -327,6 +327,13 @@
 
 @push('styles')
 <style>
+/* 💡 التعديل الذكي لحل المشكلة جذرياً على الهواتف دون المساس بالتصميم الأصلي */
+@media (max-width: 1279px) {
+  .card, .podium-section {
+    margin-bottom: 24px !important; /* يجبر المتصفح على وضع مسافة عازلة (Ecart) أسفل كل جدول وكارت في الهاتف */
+  }
+}
+
 /* ══ Podium Styles ═════════════════════════════════════ */
 .podium-section {
   background: linear-gradient(135deg, #022c22, #043e2f);

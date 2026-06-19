@@ -8,63 +8,42 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    // ─── عرض قائمة الإشعارات ──────────────────────────────
     public function index()
     {
         $user = Auth::user();
 
         $notifications = Notification::where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->get();
 
-        $unreadCount = $notifications->where('is_read', false)->count();
-
-        // تجميع حسب الحالة
         $unread = $notifications->where('is_read', false);
         $read   = $notifications->where('is_read', true);
+        $unreadCount = $unread->count();
 
         return view('notifications.index', compact(
-            'notifications',
-            'unreadCount',
-            'unread',
-            'read'
+            'notifications', 'unread', 'read', 'unreadCount'
         ));
     }
 
-    // ─── تعيين إشعار واحد كمقروء ──────────────────────────
-    public function markRead($id)
+    public function markRead(Notification $notification)
     {
-        $notification = Notification::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
-        $notification->markAsRead();
-
+        abort_unless($notification->user_id === Auth::id(), 403);
+        $notification->update(['is_read' => true, 'read_at' => now()]);
         return back()->with('success', 'تم تعيين الإشعار كمقروء');
     }
 
-    // ─── تعيين كل الإشعارات كمقروءة ──────────────────────
     public function markAllRead()
     {
         Notification::where('user_id', Auth::id())
             ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now(),
-            ]);
-
-        return back()->with('success', 'تم تعيين جميع الإشعارات كمقروءة');
+            ->update(['is_read' => true, 'read_at' => now()]);
+        return back()->with('success', 'تم تعيين جميع الإشعارات كمقروءة ✅');
     }
 
-    // ─── حذف إشعار ────────────────────────────────────────
-    public function destroy($id)
+    public function destroy(Notification $notification)
     {
-        $notification = Notification::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
+        abort_unless($notification->user_id === Auth::id(), 403);
         $notification->delete();
-
-        return back()->with('success', 'تم حذف الإشعار');
+        return back();
     }
 }

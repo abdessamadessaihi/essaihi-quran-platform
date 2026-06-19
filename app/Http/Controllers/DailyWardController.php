@@ -8,6 +8,8 @@ use App\Models\Streak;
 use App\Models\XpTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
+
 
 class DailyWardController extends Controller
 {
@@ -99,35 +101,40 @@ class DailyWardController extends Controller
 
         return back()->with('success', 'تم تحديث الورد ✅');
     }
+public function complete(Request $request)
+{
+    $user = Auth::user();
 
-    public function complete(Request $request)
-    {
-        $user = Auth::user();
+    $ward = DailyWard::where('user_id', $user->id)
+                      ->whereDate('ward_date', today())
+                      ->firstOrFail();
 
-        $ward = DailyWard::where('user_id', $user->id)
-                          ->whereDate('ward_date', today())
-                          ->firstOrFail();
-
-        if ($ward->is_completed) {
-            return back()->with('error', 'الورد مكتمل بالفعل بحمد الله.');
-        }
-
-        $ward->complete((float) $ward->target_value);
-
-        // تحديث الـ Streak
-        $streak = Streak::firstOrCreate(['user_id' => $user->id]);
-        $streak->recordActivity();
-
-        // منح XP
-        XpTransaction::award(
-            $user->id, 50,
-            XpTransaction::SOURCE_WARD,
-            $ward->id,
-            'إكمال الورد اليومي'
-        );
-
-        return back()->with('success', 'أحسنت! اكتمل ورد اليوم بحمد الله 🎉');
+    if ($ward->is_completed) {
+        return back()->with('error', 'الورد مكتمل بالفعل بحمد الله.');
     }
+
+    $ward->complete((float) $ward->target_value);
+
+    // تحديث الـ Streak وجلب الكائن الصحيح
+    $streak = Streak::firstOrCreate(['user_id' => $user->id]);
+    $streak->recordActivity();
+    
+    // 🌟 الإصلاح هنا: استدعاء المتغيرات من الكائنات الصحيحة ($streak و $user)
+    $milestones = [7, 30, 100, 365];
+    if (in_array($streak->current_streak, $milestones)) {
+        NotificationService::onStreakMilestone($user, $streak->current_streak);
+    }
+
+    // منح XP
+    XpTransaction::award(
+        $user->id, 50,
+        XpTransaction::SOURCE_WARD,
+        $ward->id,
+        'إكمال الورد اليومي'
+    );
+
+    return back()->with('success', 'أحسنت! اكتمل ورد اليوم بحمد الله 🎉');
+}
 
     public function destroy(DailyWard $ward)
     {

@@ -18,9 +18,10 @@
      alt="Idée"
      style="width:80px;height:80px;object-fit:contain">     <div class="ornament-line"></div>
   </div>
+  
   <div class="page-header-content">
-    <div>
-      <h1 class="page-title">الختمات القرآنية</h1>
+    <div style="flex:1;min-width:0;">
+      <h1 class="page-title"  >الختمات القرآنية</h1>
       <p class="page-subtitle">تابع ختماتك الجماعية والفردية وشارك في إحياء كتاب الله</p>
     </div>
     <a href="{{ route('khatmas.create') }}" class="btn-create">
@@ -31,6 +32,19 @@
       ختمة جديدة
     </a>
   </div>
+</div>
+<div style="text-align:center;padding:32px;border-radius:20px;
+            background:linear-gradient(135deg,#031810,#042a1e);
+            margin-bottom:28px;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;opacity:.04;
+              background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E\");
+              background-size:60px"></div>
+  <p style="position:relative;font-family:'Amiri',serif;font-size:1.3rem;
+            color:rgba(255,255,255,.92);line-height:2;margin-bottom:8px">
+    ﴿ مَن قرأَ حرفًا من كتابِ اللَّهِ فلَهُ بِهِ حسنةٌ، والحسنةُ بعشرِ أمثالِها، لا أقولُ الم حرفٌ، ولَكن ألفٌ حرفٌ ولامٌ حرفٌ وميمٌ حرفٌ﴾  
+  </p>
+  <p style="position:relative;font-size:12.5px;color:#f59e0b;opacity:.85">
+حديث نبوي صحيح </p>
 </div>
 
 {{-- ══ Tabs ══ --}}
@@ -62,11 +76,11 @@
         <div class="khatma-card-header">
           <div class="khatma-type-badge khatma-type-{{ $khatma->type }}">
             {{ match($khatma->type) {
-              'ramadan' => '🌙 رمضان',
-              'weekly'  => '📅 أسبوعية',
-              'family'  => '👨‍👩‍👧 عائلية',
-              'individual'=>'👤 فردية',
-              default   => '📚 عامة',
+              'ramadan' => ' رمضان',
+              'weekly'  => ' أسبوعية',
+              'family'  => ' عائلية',
+              'individual'=>' فردية',
+              default   => ' عامة',
             } }}
           </div>
           <div class="khatma-status-dot active"></div>
@@ -163,6 +177,8 @@
   </div>
 
 </div>
+
+
 
 @endsection
 

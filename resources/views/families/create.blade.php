@@ -41,7 +41,7 @@
         </label>
         <input type="text" name="name"
                value="{{ old('name') }}"
-               placeholder="مثال: عائلة السيحي القرآنية"
+               placeholder="مثال: عائلة  يحيى السيحي"
                class="field-input"
                style="font-family:'Tajawal',sans-serif"/>
         @error('name')
