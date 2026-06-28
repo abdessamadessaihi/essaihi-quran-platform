@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Hash;
 
 class FamilyController extends Controller
 {
@@ -226,4 +227,77 @@ class FamilyController extends Controller
             ->where('status', 'active')
             ->exists();
     }
+   
+
+// ── أضف هذه الدوال داخل كلاس FamilyController الخاص بك ──────────────────
+
+public function storeChild(Request $request)
+{
+    /** @var User $parent */
+    $parent = Auth::user();
+
+    $validated = $request->validate([
+        'name'      => 'required|string|max:100',
+        'age'       => 'nullable|integer|min:3|max:18',
+        'username'  => 'required|string|alpha_num|min:3|max:50|unique:users,username',
+        'pin_code'  => 'required|digits:4',
+        'family_id' => 'required|exists:families,id'
+    ]);
+
+    // 1. إنشاء حساب الطفل التابع
+    $child = User::create([
+        'name'       => $validated['name'],
+        'username'   => strtolower($validated['username']),
+        'pin_code'   => Hash::make($validated['pin_code']), // تشفير الـ PIN للأمان
+        'age'        => $validated['age'],
+        'parent_id'  => $parent->id,
+        'role'       => 'member',
+        'is_active'  => true,
+    ]);
+
+    // 2. ضمه تلقائياً لعائلة ولي الأمر بحالة نشطة فوراً وبدون انتظار
+    FamilyMember::create([
+        'user_id'     => $child->id,
+        'family_id'   => $validated['family_id'],
+        'status'      => 'active',
+        'role'        => 'member',
+        'approved_by' => $parent->id,
+        'joined_at'   => now(),
+    ]);
+
+    return back()->with('success', "تم إضافة البطل(ة) {$child->name} بنجاح وتفعيل حسابه 🎉");
+}
+
+public function impersonateChild(User $child)
+{
+    /** @var User $parent */
+    $parent = Auth::user();
+
+    // التحقق الأمني: تأكيد أن المستخدم الحالي هو الأب الفعلي للطفل
+    if ($child->parent_id !== $parent->id) {
+        abort(403, 'غير مصرح لك بالدخول لحساب هذا الطفل.');
+    }
+
+    // تبديل الـ Session لحساب الطفل مباشرة
+    Auth::login($child);
+
+    return redirect()->route('dashboard')->with('success', "أنت تصفح الآن كـ: {$child->name} 🧑‍💻");
+}
+
+public function destroyChild(User $child)
+{
+    /** @var User $parent */
+    $parent = Auth::user();
+
+    // التحقق الأمني: تأكيد أن المستخدم الحالي هو الأب الفعلي للطفل
+    if ($child->parent_id !== $parent->id) {
+        abort(403, 'غير مصرح لك بحذف هذا الحساب.');
+    }
+
+    // حذف روابط العضوية أولاً ثم الحساب نهائياً
+    $child->familyMemberships()->delete();
+    $child->delete();
+
+    return back()->with('success', 'تم حذف حساب الطفل وإلغاء تبعيته بنجاح 🗑️');
+}
 }

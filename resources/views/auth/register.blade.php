@@ -61,6 +61,14 @@ body{
 .auth-ayah{font-family:'Amiri',serif;font-size:1.2rem;color:rgba(255,255,255,.85);line-height:1.9;margin-bottom:8px}
 .auth-ayah-ref{font-size:11.5px;color:#f59e0b;opacity:.75}
 
+
+.auth-separator{
+  display:flex;align-items:center;gap:14px;
+  margin:24px 0;color:#9ca3af;font-size:13px;
+}
+.auth-separator::before,.auth-separator::after{
+  content:'';flex:1;height:1px;background:#e5e7eb;
+}
 /* خطوات التسجيل */
 .register-steps{margin-top:32px;display:flex;flex-direction:column;gap:16px;text-align:right}
 .register-step{
@@ -383,6 +391,20 @@ body{
       لديك حساب بالفعل؟
       <a href="{{ route('login') }}">سجّل دخولك</a>
     </p>
+
+       </p>
+
+           <div class="auth-separator">أو</div>
+
+   <a href="{{ route('auth.google') }}" class="btn-google" style="display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px solid #e5e7eb; padding: 13px; border-radius: 12px; text-decoration: none; color: #374151; font-weight: 600; font-family: 'Tajawal', sans-serif; font-size: 14.5px; margin-top: 16px; background: #fff; transition: background 0.2s, border-color 0.2s;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="width: 20px; height: 20px;">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.5 24c0-1.61-.15-3.16-.42-4.69H24v8.87h12.66c-.54 2.9-2.18 5.36-4.64 7.01l7.19 5.58C43.43 36.25 46.5 30.73 46.5 24z"/>
+        <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.19-5.58c-1.99 1.34-4.53 2.14-7.2 2.14-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    تسجيل الدخول بواسطة جوجل
+</a>
 
   </form>
 </div>

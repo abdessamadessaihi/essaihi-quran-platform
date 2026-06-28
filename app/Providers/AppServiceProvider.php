@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Auth\Notifications\ResetPassword; 
+use App\Notifications\CustomResetPasswordNotification; 
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -78,5 +80,8 @@ class AppServiceProvider extends ServiceProvider
     if (file_exists(app_path('Helpers/NotificationHelpers.php'))) {
             require_once app_path('Helpers/NotificationHelpers.php');
         }
+        ResetPassword::toMailUsing(function ($notifiable, $token) {
+            return (new CustomResetPasswordNotification($token))->toMail($notifiable);
+        });
 }
 }

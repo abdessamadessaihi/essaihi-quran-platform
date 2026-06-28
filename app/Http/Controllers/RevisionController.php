@@ -109,40 +109,66 @@ class RevisionController extends Controller
         return back()->with('success', 'تم تأجيل المراجعة');
     }
 
-    /**
-     * جدولة المراجعة التالية بنظام التكرار المتباعد
-     * اليوم → غداً → 3 أيام → أسبوع → شهر
+   /**
+     * جدولة المراجعة التالية بنظام التكرار المتباعد المطور والمحمي
+     * اليوم ← غداً ← 3 أيام ← أسبوع ← شهر
      */
     private function scheduleNextRevision(Revision $revision, int $score): void
     {
-        // خريطة التكرار المتباعد حسب نوع المراجعة
-        $nextType = match($revision->revision_type) {
-            'daily'   => 'weekly',
-            'weekly'  => 'monthly',
-            'monthly' => null, // اكتملت دورة المراجعة
-            default   => null,
-        };
+        $currentType = $revision->revision_type;
+        $nextType = $currentType; // افتراضياً تبقى نفس النوع لتثبيتها
+        $daysUntilNext = 7;
 
-        if (!$nextType) return;
+        // 1. منطق التدرج المرن والتكرار بناءً على النوع والدرجة
+        if ($currentType === 'daily') {
+            if ($score >= 85) {
+                $nextType = 'weekly';
+                $daysUntilNext = 7; // إتقان جيد، ترفع لأسبوعية بعد 7 أيام
+            } else {
+                $nextType = 'daily';
+                $daysUntilNext = 1; // يحتاج إعادة مراجعة غداً
+            }
+        } elseif ($currentType === 'weekly') {
+            if ($score >= 92) {
+                $nextType = 'monthly';
+                $daysUntilNext = 30; // إتقان ممتاز جداً، ترفع لشهرية بعد شهر
+            } elseif ($score >= 70) {
+                $nextType = 'weekly';
+                $daysUntilNext = 7; // يستمر بالمراجعة الأسبوعية العادية كل 7 أيام
+            } else {
+                $nextType = 'weekly';
+                $daysUntilNext = 3; // إتقان مهزوز، تقريب الموعد القادم بعد 3 أيام فقط لتثبيته
+            }
+        } elseif ($currentType === 'monthly') {
+            if ($score >= 80) {
+                $nextType = 'monthly';
+                $daysUntilNext = 30; // الحفاظ على التكرار الشهري الدائم للمراجعة المستمرة
+            } else {
+                $nextType = 'weekly'; // النزول للمستوى الأسبوعي مرة أخرى لضعف الدرجة
+                $daysUntilNext = 7;
+            }
+        }
 
-        // كلما كان الإتقان ضعيفاً، كلما كانت المراجعة التالية أقرب
-        $daysUntilNext = match(true) {
-            $score >= 90 && $nextType === 'weekly'  => 7,
-            $score >= 90 && $nextType === 'monthly' => 30,
-            $score >= 70 && $nextType === 'weekly'  => 5,
-            $score >= 70 && $nextType === 'monthly' => 21,
-            $score >= 50 && $nextType === 'weekly'  => 3,
-            $score >= 50 && $nextType === 'monthly' => 14,
-            $nextType === 'weekly'                  => 2,
-            default                                 => 7,
-        };
+        // حساب التاريخ المستهدف الدقيق
+        $targetDate = today()->addDays($daysUntilNext);
 
-        Revision::create([
-            'user_id'         => Auth::id(),
-            'memorization_id' => $revision->memorization_id,
-            'revision_type'   => $nextType,
-            'status'          => 'pending',
-            'scheduled_date'  => today()->addDays($daysUntilNext),
-        ]);
+        // 2. 🛡️ درع الحماية لمنع التكرار في نفس اليوم المستهدف
+        // التحقق مما إذا كانت هناك مراجعة مجدولة مستقبلاً لنفس الحفظ في هذا التاريخ أو قبله لتفادي التراكم
+        $alreadyScheduled = Revision::where('user_id', Auth::id())
+            ->where('memorization_id', $revision->memorization_id)
+            ->where('status', 'pending')
+            ->whereDate('scheduled_date', $targetDate->toDateString())
+            ->exists();
+
+        // إذا لم تكن مجدولة مسبقاً، ننشئها بأمان
+        if (!$alreadyScheduled) {
+            Revision::create([
+                'user_id'         => Auth::id(),
+                'memorization_id' => $revision->memorization_id,
+                'revision_type'   => $nextType,
+                'status'          => 'pending',
+                'scheduled_date'  => $targetDate,
+            ]);
+        }
     }
 }

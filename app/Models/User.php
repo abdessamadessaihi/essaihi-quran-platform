@@ -8,8 +8,10 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\CustomResetPasswordNotification; 
+class User extends Authenticatable implements MustVerifyEmail
 
-class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
@@ -30,7 +32,13 @@ class User extends Authenticatable
         'role',
         'locale',
         'is_active',
-        'mushaf_page', // حقل حفظ صفحة المصحف الذي أضفناه سابقاً
+        'mushaf_page',
+        'parent_id',
+        'username',
+        'pin_code',
+        'age',
+        'google_id',           
+        'has_logged_in_before',
     ];
 
     protected $hidden = [
@@ -97,13 +105,6 @@ class User extends Authenticatable
         return $this->hasMany(Family::class, 'created_by');
     }
 
-    /** العائلات التي ينتمي إليها عبر جدول family_members */
-    public function families(): BelongsToMany
-    {
-        return $this->belongsToMany(Family::class, 'family_members')
-                    ->withPivot(['status', 'role', 'approved_by', 'joined_at'])
-                    ->wherePivot('status', 'active');
-    }
 
     /** سجل عضوية المستخدم في العائلات */
     public function familyMemberships(): HasMany
@@ -197,5 +198,37 @@ class User extends Authenticatable
     {
         return $this->hasOne(Bookmark::class)
                     ->latestOfMany();
+    }
+    public function families(): BelongsToMany
+    {
+        return $this->belongsToMany(Family::class, 'family_members', 'user_id', 'family_id')
+                    ->withPivot(['role', 'status', 'approved_by', 'joined_at']);
+    }
+
+    /** العائلات النشطة فقط (للاستخدام في لوحات الإنجاز والأوراد) */
+    public function activeFamilies(): BelongsToMany
+    {
+        return $this->families()->wherePivot('status', 'active');
+    }
+    public function isChild(): bool
+{
+    return !is_null($this->parent_id);
+}
+
+/** الأب أو ولي الأمر */
+public function parent()
+{
+    return $this->belongsTo(User::class, 'parent_id');
+}
+
+/** قائمة الأطفال التابعين لولي الأمر */
+public function children()
+{
+    return $this->hasMany(User::class, 'parent_id');
+}
+
+public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
     }
 }

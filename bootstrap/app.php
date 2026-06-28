@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'family_admin'  => EnsureFamilyAdmin::class,
             'active_member' => EnsureActiveMember::class,
         ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

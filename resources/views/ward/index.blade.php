@@ -40,11 +40,32 @@
     <img src="{{ asset('images/target2.png') }}" alt="Idée" style="width:30px;height:30px;object-fit:contain">    
     <div>
       <p class="ward-stat-value">
-        {{ $wardToday ? rtrim(rtrim($wardToday->target_value,'0'),'.') : '—' }}
+        @if($wardToday)
+          @if($wardToday->target_unit === 'pages')
+            الصفحات من {{ $wardToday->start_page }} إلى {{ $wardToday->end_page }}
+          @elseif($wardToday->target_unit === 'surahs')
+            سورة {{ $surahs[$wardToday->start_surah] ?? $wardToday->start_surah }}
+          @elseif($wardToday->target_unit === 'hizbs')
+            الحزب {{ $wardToday->start_hizb ?? $wardToday->specific_hizb }}
+          @elseif($wardToday->target_unit === 'juzs')
+            الجزء {{ $wardToday->start_juz ?? $wardToday->specific_juz }}
+          @elseif($wardToday->target_unit === 'ayahs')
+            ورد مستقل ({{ (int)$wardToday->target_value }} آيات)
+          @endif
+        @else
+          —
+        @endif
       </p>
       <p class="ward-stat-label">هدف اليوم</p>
       <p class="ward-stat-sub">
-        {{ $wardToday ? ($unitLabels[$wardToday->target_unit] ?? '') : 'لم يحدد بعد' }}
+        @if($wardToday)
+          @if($wardToday->target_unit === 'surahs') سورة كاملة
+          @elseif($wardToday->target_unit === 'hizbs') الحزب الحالي
+          @elseif($wardToday->target_unit === 'juzs') الجزء الحالي
+          @else صفحات ومواضع @endif
+        @else
+          لم يحدد بعد
+        @endif
       </p>
     </div>
   </div>
@@ -70,11 +91,13 @@
   </div>
 
   <div class="ward-stat">
-    <img src="{{ asset('images/calendar.png') }}" alt="Idée" style="width:30px;height:30px;object-fit:contain">    
+    <img src="{{ asset('images/target2.png') }}" alt="Idée" style="width:30px;height:30px;object-fit:contain">    
     <div>
-      <p class="ward-stat-value">{{ $allWards->total() }}</p>
-      <p class="ward-stat-label">إجمالي الأوراد</p>
-      <p class="ward-stat-sub">{{ $completionRate }}٪ معدل الإنجاز</p>
+      <p class="ward-stat-value">
+        {{ $completedCount }} / {{ $totalCount }}
+      </p>
+      <p class="ward-stat-label">معدل الإنجاز العام</p>
+      <p class="ward-stat-sub">نسبة النجاح الكلية: {{ $completionRate }}٪</p>
     </div>
   </div>
 
@@ -93,7 +116,7 @@
         <div class="card-header-title">
           <img src="{{ asset('images/wird.png') }}" alt="Idée" style="width:30px;height:30px;object-fit:contain">          
           <div>
-            ورد اليوم
+            ورد اليوم الحالي
             <p class="ward-card-note">
               {{ $wardToday->ward_date->locale('ar')->isoFormat('dddd، D MMMM') }}
             </p>
@@ -105,15 +128,21 @@
       </div>
 
       <div class="card-body">
-
-        {{-- شريط التقدم ──────────────────────────────── --}}
+        {{-- شريط التقدم --}}
         <div class="ward-progress-head">
           <div>
             <p class="ward-progress-title">
-              {{ rtrim(rtrim($wardToday->actual_value,'0'),'.') }}
-              من
-              {{ rtrim(rtrim($wardToday->target_value,'0'),'.') }}
-              {{ $unitLabels[$wardToday->target_unit] ?? '' }}
+              @if($wardToday->target_unit === 'pages')
+                تمت قراءة {{ rtrim(rtrim($wardToday->actual_value,'0'),'.') }} صفحات
+              @elseif($wardToday->target_unit === 'surahs' && isset($surahs[$wardToday->start_surah ?? $wardToday->specific_surah]))
+                سورة {{ $surahs[$wardToday->start_surah ?? $wardToday->specific_surah] }}
+              @elseif($wardToday->target_unit === 'hizbs')
+                الحزب {{ $wardToday->start_hizb ?? $wardToday->specific_hizb }}
+              @elseif($wardToday->target_unit === 'juzs')
+                الجزء {{ $wardToday->start_juz ?? $wardToday->specific_juz }}
+              @else
+                {{ rtrim(rtrim($wardToday->actual_value,'0'),'.') }} من {{ rtrim(rtrim($wardToday->target_value,'0'),'.') }}
+              @endif
             </p>
             <p class="ward-progress-sub">
               @if($wardToday->khatma)
@@ -130,18 +159,23 @@
           <div class="ward-progress-fill" style="width:{{ $todayProgress }}%"></div>
         </div>
 
-        {{-- الموضع ──────────────────────────────────── --}}
-        @if($wardToday->location_type)
+        {{-- الموضع المحدث بناءً على اختيار المدخلات الفعلي --}}
         <div class="ward-location-box">
-          <span class="ward-location-label"> موضع القراءة</span>
+          <span class="ward-location-label">📍 الموضع الحالي</span>
           <span class="ward-location-value">
-            {{ $locationLabels[$wardToday->location_type] ?? '' }}
-            {{ $wardToday->{'start_'.$wardToday->location_type} }}
-            —
-            {{ $wardToday->{'end_'.$wardToday->location_type} }}
+            @if($wardToday->target_unit === 'pages' && $wardToday->start_page && $wardToday->end_page)
+              من صفحة {{ $wardToday->start_page }} إلى {{ $wardToday->end_page }}
+            @elseif($wardToday->target_unit === 'surahs' && isset($surahs[$wardToday->start_surah ?? $wardToday->specific_surah]))
+              سورة {{ $surahs[$wardToday->start_surah ?? $wardToday->specific_surah] }} كاملة
+            @elseif($wardToday->target_unit === 'hizbs')
+              الحزب رقم {{ $wardToday->start_hizb ?? $wardToday->specific_hizb }}
+            @elseif($wardToday->target_unit === 'juzs')
+              الجزء رقم {{ $wardToday->start_juz ?? $wardToday->specific_juz }}
+            @else
+              الموضع المحدد للورد اليومي
+            @endif
           </span>
         </div>
-        @endif
 
         {{-- الملاحظات --}}
         @if($wardToday->notes)
@@ -150,9 +184,8 @@
         </p>
         @endif
 
-        {{-- الأزرار ──────────────────────────────────── --}}
+        {{-- الأزرار --}}
         <div class="ward-actions">
-
           @unless($wardToday->is_completed)
           <form method="POST" action="{{ route('ward.complete') }}" class="ward-action-form">
             @csrf
@@ -169,13 +202,11 @@
                    placeholder="المنجز فعلياً"/>
             <button type="submit" class="ward-btn secondary">تحديث</button>
           </form>
-
         </div>
       </div>
     </div>
-
     @else
-    {{-- ══ إضافة ورد اليوم ══ --}}
+    {{-- ══ إضافة ورد اليوم الجديد والمنظم ══ --}}
     <div class="card">
       <div class="card-header">
         <div class="card-header-title">
@@ -184,38 +215,92 @@
         </div>
       </div>
       <div class="card-body">
-
-        <form method="POST" action="{{ route('ward.store') }}" x-data="{ locationType: '' }">
+        <form method="POST" action="{{ route('ward.store') }}" x-data="{ target_unit: '{{ old('target_unit', '') }}' }">
           @csrf
 
-          {{-- الهدف --}}
-          <div class="ward-form-section-title">🎯 تحديد الهدف</div>
+          {{-- 🎯 قسم تحديد الهدف والموضع المدمج --}}
+          <div class="ward-form-section-title">🎯 تحديد الهدف والموضع</div>
+          
+          <div class="ward-field" style="margin-bottom:16px">
+            <label>نوع الهدف والموضع *</label>
+            <select name="target_unit" x-model="target_unit" required>
+              <option value="">اختر نوع الهدف والتقسيم...</option>
+              <option value="pages">بالصفحات (١ — ٦٠٤)</option>
+              <option value="surahs">بالسور</option>
+              <option value="hizbs">بالأحزاب (١ — ٦٠)</option>
+              <option value="juzs">بالأجزاء (١ — ٣٠)</option>
+            </select>
+            @error('target_unit') <p class="ward-error">{{ $message }}</p> @enderror
+          </div>
+
+          {{-- 1. حقول الصفحات --}}
+          <div x-show="target_unit === 'pages'" x-transition style="display:none; margin-bottom:16px;">
+            <div class="ward-form-grid">
+              <div class="ward-field">
+                <label>من صفحة *</label>
+                <select name="start_page" :required="target_unit === 'pages'">
+                  <option value="">اختر الصفحة</option>
+                  @foreach(range(1, 604) as $page)
+                    <option value="{{ $page }}" @selected(old('start_page') == $page)>الصفحة {{ $page }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="ward-field">
+                <label>إلى صفحة *</label>
+                <select name="end_page" :required="target_unit === 'pages'">
+                  <option value="">اختر الصفحة</option>
+                  @foreach(range(1, 604) as $page)
+                    <option value="{{ $page }}" @selected(old('end_page') == $page)>الصفحة {{ $page }}</option>
+                  @endforeach
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {{-- 2. حقل السور --}}
+          <div x-show="target_unit === 'surahs'" x-transition style="display:none; margin-bottom:16px;" class="ward-field">
+            <label>السورة المستهدفة *</label>
+            <select name="specific_surah" :required="target_unit === 'surahs'">
+              <option value="">اختر السورة من القائمة</option>
+              @foreach($surahs as $num => $name)
+                <option value="{{ $num }}" @selected(old('specific_surah') == $num)>{{ $num }} — {{ $name }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- 3. حقل الأحزاب --}}
+          <div x-show="target_unit === 'hizbs'" x-transition style="display:none; margin-bottom:16px;" class="ward-field">
+            <label>الحزب المستهدف *</label>
+            <select name="specific_hizb" :required="target_unit === 'hizbs'">
+              <option value="">اختر الحزب</option>
+              @foreach(range(1, 60) as $hizb)
+                <option value="{{ $hizb }}" @selected(old('specific_hizb') == $hizb)>الحزب {{ $hizb }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- 4. حقل الأجزاء --}}
+          <div x-show="target_unit === 'juzs'" x-transition style="display:none; margin-bottom:16px;" class="ward-field">
+            <label>الجزء المستهدف *</label>
+            <select name="specific_juz" :required="target_unit === 'juzs'">
+              <option value="">اختر الجزء من القرآن</option>
+              @foreach(range(1, 30) as $juz)
+                <option value="{{ $juz }}" @selected(old('specific_juz') == $juz)>الجزء {{ $juz }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- حقول التوقيت والارتباط --}}
           <div class="ward-form-grid">
-            <div class="ward-field">
-              <label>نوع الهدف *</label>
-              <select name="target_unit" required>
-                @foreach($unitLabels as $val => $lbl)
-                <option value="{{ $val }}" @selected(old('target_unit','pages') === $val)>
-                  {{ $lbl }}
-                </option>
-                @endforeach
-              </select>
-              @error('target_unit') <p class="ward-error">{{ $message }}</p> @enderror
-            </div>
-            <div class="ward-field">
-              <label>المقدار *</label>
-              <input name="target_value" type="number" min="0.01" step="0.01" value="{{ old('target_value') }}" placeholder="مثال: 5" required/>
-              @error('target_value') <p class="ward-error">{{ $message }}</p> @enderror
-            </div>
             <div class="ward-field">
               <label>التاريخ *</label>
               <input name="ward_date" type="date" dir="ltr" value="{{ old('ward_date', today()->toDateString()) }}" required/>
               @error('ward_date') <p class="ward-error">{{ $message }}</p> @enderror
             </div>
             <div class="ward-field">
-              <label>الختمة (اختياري)</label>
+              <label>الختمة المرتبطة (اختياري)</label>
               <select name="khatma_id">
-                <option value="">ورد مستقل</option>
+                <option value="">ورد مستقل غير تابع لختمة</option>
                 @foreach($khatmas as $khatma)
                 <option value="{{ $khatma->id }}" @selected(old('khatma_id') == $khatma->id)>
                   {{ $khatma->title }}
@@ -225,104 +310,25 @@
             </div>
           </div>
 
-          {{-- الموضع --}}
-          <div class="ward-form-section-title" style="margin-top:20px">📍 تحديد الموضع (اختياري)</div>
-          <div class="ward-field" style="margin-bottom:14px">
-            <label>نوع الموضع</label>
-            <select name="location_type" x-model="locationType">
-              <option value="">بدون تحديد موضع</option>
-              <option value="page">بالصفحات (١ — ٦٠٤)</option>
-              <option value="surah">بالسور</option>
-              <option value="hizb">بالأحزاب (١ — ٦٠)</option>
-              <option value="juz">بالأجزاء (١ — ٣٠)</option>
-            </select>
-          </div>
-
-          {{-- حقول الموضع الديناميكية --}}
-          <div x-show="locationType" x-transition style="display:none">
-            <template x-if="locationType === 'page'">
-              <div class="ward-form-grid">
-                <div class="ward-field">
-                  <label>من صفحة</label>
-                  <input name="start_page" type="number" min="1" max="604" value="{{ old('start_page') }}" placeholder="١"/>
-                </div>
-                <div class="ward-field">
-                  <label>إلى صفحة</label>
-                  <input name="end_page" type="number" min="1" max="604" value="{{ old('end_page') }}" placeholder="٦٠٤"/>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="locationType === 'surah'">
-              <div class="ward-form-grid">
-                <div class="ward-field">
-                  <label>من سورة</label>
-                  <select name="start_surah">
-                    <option value="">اختر</option>
-                    @foreach($surahs as $num => $name)
-                    <option value="{{ $num }}" @selected(old('start_surah') == $num)>{{ $num }} — {{ $name }}</option>
-                    @endforeach
-                  </select>
-                </div>
-                <div class="ward-field">
-                  <label>إلى سورة</label>
-                  <select name="end_surah">
-                    <option value="">اختر</option>
-                    @foreach($surahs as $num => $name)
-                    <option value="{{ $num }}" @selected(old('end_surah') == $num)>{{ $num }} — {{ $name }}</option>
-                    @endforeach
-                  </select>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="locationType === 'hizb'">
-              <div class="ward-form-grid">
-                <div class="ward-field">
-                  <label>من حزب</label>
-                  <input name="start_hizb" type="number" min="1" max="60" value="{{ old('start_hizb') }}"/>
-                </div>
-                <div class="ward-field">
-                  <label>إلى حزب</label>
-                  <input name="end_hizb" type="number" min="1" max="60" value="{{ old('end_hizb') }}"/>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="locationType === 'juz'">
-              <div class="ward-form-grid">
-                <div class="ward-field">
-                  <label>من جزء</label>
-                  <input name="start_juz" type="number" min="1" max="30" value="{{ old('start_juz') }}"/>
-                </div>
-                <div class="ward-field">
-                  <label>إلى جزء</label>
-                  <input name="end_juz" type="number" min="1" max="30" value="{{ old('end_juz') }}"/>
-                </div>
-              </div>
-            </template>
-          </div>
-
           {{-- ملاحظات --}}
-          <div class="ward-field" style="margin-top:14px">
-            <label>ملاحظات</label>
-            <textarea name="notes" rows="3" maxlength="500" placeholder="أضف ملاحظة اختيارية...">{{ old('notes') }}</textarea>
+          <div class="ward-field" style="margin-top:16px">
+            <label>ملاحظات إضافية</label>
+            <textarea name="notes" rows="3" maxlength="500" placeholder="اكتب تدوينتك أو ملاحظاتك حول قراءة اليوم هنا..."></textarea>
             @error('notes') <p class="ward-error">{{ $message }}</p> @enderror
           </div>
 
-          <button type="submit" class="ward-btn primary wide" style="margin-top:20px">حفظ ورد اليوم</button>
+          <button type="submit" class="ward-btn primary wide" style="margin-top:20px">حفظ وجدولة ورد اليوم</button>
         </form>
-
       </div>
     </div>
     @endif
 
-    {{-- ══ سجل الأوراد ══ --}}
+    {{-- ══ سجل الأوراد التاريخي المعزول ══ --}}
     <div class="card" style="margin-top:20px">
       <div class="card-header">
         <div class="card-header-title">
           <div class="card-icon blue">🗂️</div>
-          سجل الأوراد
+          سجل الأوراد التاريخي
         </div>
         <span style="font-size:12px;color:var(--text-m)">{{ $allWards->total() }} سجل</span>
       </div>
@@ -330,17 +336,17 @@
 
         @if($allWards->count())
         
-        {{-- الحاوية الخاصة بالكمبيوتر (تختفي تلقائياً على الهاتف لمنع كسر التصميم) --}}
+        {{-- نسخة الكمبيوتر --}}
         <div class="desktop-table-wrapper">
           <table class="ward-table">
             <thead>
               <tr>
-                <th>التاريخ</th>
-                <th>الهدف</th>
-                <th>المنجز</th>
-                <th>نسبة الإنجاز</th>
-                <th>الحالة</th>
-                <th></th>
+                <th style="width: 15%;">التاريخ</th>
+                <th style="width: 30%;">الهدف / الموضع</th>
+                <th style="width: 15%;">المنجز</th>
+                <th style="width: 20%;">نسبة الإنجاز</th>
+                <th style="width: 10%;">الحالة</th>
+                <th style="width: 10%; text-align: center;">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -351,26 +357,57 @@
                   <br>
                   <span style="font-size:11px;color:var(--text-m)">{{ $ward->ward_date->format('Y') }}</span>
                 </td>
-                <td>{{ rtrim(rtrim($ward->target_value,'0'),'.') }} {{ $unitLabels[$ward->target_unit] ?? '' }}</td>
-                <td>{{ rtrim(rtrim($ward->actual_value,'0'),'.') }} {{ $unitLabels[$ward->target_unit] ?? '' }}</td>
                 <td>
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <div style="flex:1;height:5px;background:var(--bg);border-radius:100px;overflow:hidden;min-width:60px">
-                      <div style="height:100%;border-radius:100px;background:linear-gradient(to left,#059669,#34d399);width:{{ $ward->adherence_pct }}%"></div>
-                    </div>
-                    <span style="font-size:12px;font-weight:700;color:{{ $ward->adherence_pct >= 80 ? '#059669' : '#d97706' }}">{{ $ward->adherence_pct }}٪</span>
-                  </div>
-                </td>
-                <td>
-                  <span class="ward-status {{ $ward->is_completed ? 'completed' : 'pending' }}">
-                    {{ $ward->is_completed ? '✅ مكتمل' : '⏳ غير مكتمل' }}
+                  <span class="ward-table-badge">
+                    @if($ward->target_unit === 'pages')
+                        الصفحات: من {{ $ward->start_page }} إلى {{ $ward->end_page }}
+                    @elseif($ward->target_unit === 'surahs')
+                        سورة: {{ $surahs[$ward->start_surah] ?? $ward->start_surah }}
+                    @elseif($ward->target_unit === 'hizbs')
+                        الحزب رقم: {{ $ward->start_hizb ?? $ward->specific_hizb }}
+                    @elseif($ward->target_unit === 'juzs')
+                        الجزء رقم: {{ $ward->start_juz ?? $ward->specific_juz }}
+                    @elseif($ward->target_unit === 'ayahs')
+                        {{ (int)$ward->target_value }} آيات
+                    @endif
                   </span>
                 </td>
                 <td>
-                  <form method="POST" action="{{ route('ward.destroy', $ward) }}">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="ward-delete-btn" onclick="return confirm('هل تريد حذف هذا السجل؟')">حذف</button>
-                  </form>
+                    <strong>
+                      @if($ward->target_unit === 'pages')
+                          {{ (int)$ward->actual_value }} صفحة
+                      @elseif($ward->target_unit === 'surahs')
+                          {{ (int)$ward->actual_value }} سورة
+                      @elseif($ward->target_unit === 'hizbs')
+                          {{ (int)$ward->actual_value }} حزب
+                      @elseif($ward->target_unit === 'juzs')
+                          {{ (int)$ward->actual_value }} جزء
+                      @elseif($ward->target_unit === 'ayahs')
+                          {{ (int)$ward->actual_value }} آية
+                      @endif
+                    </strong>
+                </td>
+                <td>
+                    <div class="ward-table-progress-container">
+                        <span class="ward-table-progress-text">{{ $ward->adherence_pct }}%</span>
+                        <div class="ward-table-progress-bar">
+                            <div class="ward-table-progress-fill" style="width: {{ $ward->adherence_pct }}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    @if($ward->is_completed)
+                        <span class="ward-table-status completed">✔️ مكتمل</span>
+                    @else
+                        <span class="ward-table-status pending">⏳ غير مكتمل</span>
+                    @endif
+                </td>
+                <td style="text-align: center;">
+                    <form action="{{ route('ward.destroy', $ward->id) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من الحذف؟')" style="display:inline-block;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="ward-table-delete-btn">حذف</button>
+                    </form>
                 </td>
               </tr>
               @endforeach
@@ -378,7 +415,7 @@
           </table>
         </div>
 
-        {{-- البديل الذكي للهاتف: بطاقات رشيقة وأنيقة جداً تمنع التمدد الأفقي بالكامل --}}
+        {{-- نسخة الجوال --}}
         <div class="mobile-cards-wrapper">
           @foreach($allWards as $ward)
           <div class="mobile-ward-card">
@@ -389,8 +426,29 @@
               </span>
             </div>
             <div class="m-card-info">
-              <div><span>الهدف:</span> <strong>{{ rtrim(rtrim($ward->target_value,'0'),'.') }} {{ $unitLabels[$ward->target_unit] ?? '' }}</strong></div>
-              <div><span>المنجز:</span> <strong>{{ rtrim(rtrim($ward->actual_value,'0'),'.') }} {{ $unitLabels[$ward->target_unit] ?? '' }}</strong></div>
+              <div>
+                <span>الموضع:</span> 
+                <strong>
+                  @if($ward->target_unit === 'pages' && $ward->start_page && $ward->end_page)
+                    من {{ $ward->start_page }} إلى {{ $ward->end_page }} (صفحات)
+                  @elseif($ward->target_unit === 'surahs' && isset($surahs[$ward->start_surah ?? $ward->specific_surah]))
+                    سورة {{ $surahs[$ward->start_surah ?? $ward->specific_surah] }}
+                  @elseif($ward->target_unit === 'hizbs')
+                    الحزب {{ $ward->start_hizb ?? $ward->specific_hizb }}
+                  @elseif($ward->target_unit === 'juzs')
+                    الجزء {{ $ward->start_juz ?? $ward->specific_juz }}
+                  @else
+                    {{ rtrim(rtrim($ward->target_value,'0'),'.') }} {{ $unitLabels[$ward->target_unit] ?? '' }}
+                  @endif
+                </strong>
+              </div>
+              <div>
+                <span>المنجز:</span> 
+                <strong>
+                  {{ rtrim(rtrim($ward->actual_value,'0'),'.') }}
+                  @if($ward->target_unit === 'surahs') سور @elseif($ward->target_unit === 'hizbs') أحزاب @elseif($ward->target_unit === 'juzs') أجزاء @else صفحات @endif
+                </strong>
+              </div>
             </div>
             <div class="m-card-progress-row">
               <div style="flex:1;height:6px;background:var(--bg);border-radius:100px;overflow:hidden;">
@@ -425,7 +483,7 @@
   {{-- ── الشريط الجانبي ── --}}
   <aside class="ward-side">
 
-    {{-- نصيحة --}}
+    {{-- نصيحة ثابته --}}
     <div class="card">
       <div style="padding:16px 20px;background:linear-gradient(135deg,#022c22,#064e3b);display:flex;align-items:center;gap:10px">
         <img src="{{ asset('images/idea.png') }}" alt="Idée" style="width:30px;height:30px;object-fit:contain">        
@@ -516,6 +574,7 @@
 
 @push('styles')
 <style>
+/* --- الأنماط الأساسية والهيدر --- */
 .ward-header { margin-bottom: 28px; }
 .ward-ornament { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
 .ward-ornament-line { flex: 1; height: 1px; background: linear-gradient(to left, transparent, #a7f3d0); }
@@ -526,25 +585,62 @@
 .ward-card-note { color: var(--text-m); font-size: 12px; font-weight: 400; }
 .ward-date-pill { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; white-space: nowrap; }
 
-/* Stats */
+/* --- الأزرار --- */
+.ward-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  outline: none;
+  gap: 8px;
+}
+.ward-btn.primary {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+.ward-btn.primary:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.25);
+}
+.ward-btn.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+.ward-btn.secondary:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+.ward-btn.wide { width: 100%; }
+
+/* --- بطاقات الإحصائيات --- */
 .ward-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
 .ward-stat { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; transition: transform .2s, box-shadow .2s; }
 .ward-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,.06); }
-.ward-stat-value { font-family: 'Amiri', serif; font-size: 1.8rem; font-weight: 700; color: var(--text); line-height: 1; }
+.ward-stat-value { font-family: 'Amiri', serif; font-size: 1.35rem; font-weight: 700; color: var(--text); line-height: 1.3; }
 .ward-stat-label { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 4px; }
 .ward-stat-sub { font-size: 11px; color: var(--text-m); margin-top: 2px; }
 
-/* Layout */
+/* --- تخطيط الصفحة --- */
 .ward-layout { display: grid; grid-template-columns: minmax(0,2fr) 300px; gap: 22px; align-items: start; }
 .ward-main, .ward-side { display: flex; flex-direction: column; gap: 18px; }
 
-/* Today Card */
+/* --- بطاقة اليوم والتقدم --- */
 .ward-today-card { border-color: #a7f3d0; }
 .ward-status { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; }
 .ward-status.completed { background: #d1fae5; color: #065f46; }
 .ward-status.pending   { background: #fef3c7; color: #92400e; }
 
-/* Progress */
 .ward-progress-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 .ward-progress-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .ward-progress-sub { font-size: 12px; color: var(--text-m); margin-top: 3px; }
@@ -552,83 +648,73 @@
 .ward-progress-bar { height: 10px; border-radius: 100px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-bottom: 14px; }
 .ward-progress-fill { height: 100%; border-radius: 100px; background: linear-gradient(to left, #059669, #34d399); transition: width .6s ease; }
 
-/* Location */
 .ward-location-box { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
 .ward-location-label { font-size: 12.5px; color: var(--text-m); }
 .ward-location-value { font-size: 13px; font-weight: 700; color: var(--text); }
 .ward-notes { font-size: 13px; color: var(--text-m); line-height: 1.7; padding: 10px 0; border-top: 1px solid var(--border); margin-top: 8px; }
 
-/* Actions */
+/* --- أشكال الفورم --- */
 .ward-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); align-items: center; }
 .ward-action-form { display: block; width: auto; }
 .ward-update-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ward-update-form input { padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; width: 130px; outline: none; }
 .ward-update-form input:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,.09); }
 
-/* Form */
-.ward-form-section-title { font-size: 12.5px; font-weight: 700; color: var(--text-m); margin-bottom: 12px; letter-spacing: .5px; }
+.ward-form-section-title { font-size: 13px; font-weight: 700; color: #047857; margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
 .ward-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 4px; }
-.ward-field { display: flex; flex-direction: column; gap: 7px; }
+.ward-field { display: flex; flex-direction: column; gap: 7px; width: 100%; }
 .ward-field label { font-size: 12.5px; font-weight: 600; color: var(--text); }
-.ward-field input, .ward-field select, .ward-field textarea { padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; font-size: 13.5px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.ward-field input, .ward-field select, .ward-field textarea { padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; font-size: 13.5px; outline: none; transition: border-color .2s, box-shadow .2s; width: 100%; box-sizing: border-box; }
 .ward-field input:focus, .ward-field select:focus, .ward-field textarea:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,.09); background: var(--card); }
-.ward-field textarea { resize: vertical; }
-.ward-error { font-size: 11.5px; color: #ef4444; }
+.ward-error { font-size: 11.5px; color: #ef4444; margin-top: 2px; }
 
-/* Table & Responsive Wrappers */
-.desktop-table-wrapper { display: block; overflow-x: auto; }
-.mobile-cards-wrapper { display: none; padding: 12px; }
-
-.ward-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-.ward-table th, .ward-table td { padding: 13px 22px; text-align: right; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); }
+/* --- 🌟 الأنماط الحصرية والمعزولة للجدول التاريخي --- */
+.desktop-table-wrapper { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ward-table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
+.ward-table th, .ward-table td { padding: 14px 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); vertical-align: middle; word-wrap: break-word; }
 .ward-table th { font-size: 12px; font-weight: 700; color: var(--text-m); background: var(--bg); }
 .ward-table tr:last-child td { border-bottom: none; }
-.ward-table tr:hover td { background: var(--bg); }
+.ward-table tr:hover td { background: rgba(0,0,0,0.01); }
 
-.ward-delete-btn { padding: 6px 12px; border-radius: 8px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 600; border: none; cursor: pointer; font-family: 'Tajawal', sans-serif; transition: background .18s; }
-.ward-delete-btn:hover { background: #fecaca; }
-.ward-empty { text-align: center; padding: 48px 20px; color: var(--text-m); }
-.ward-empty span { font-size: 42px; display: block; margin-bottom: 12px; }
+.ward-table-badge { display: inline-block; padding: 6px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; color: var(--text); font-weight: 500; }
+.ward-table-status { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.ward-table-status.completed { background: #d1fae5; color: #065f46; }
+.ward-table-status.pending { background: #fffbeb; color: #b45309; }
 
-/* بطاقات الهاتف الذكية */
-.mobile-ward-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-}
+.ward-table-progress-container { display: flex; align-items: center; gap: 8px; width: 100%; }
+.ward-table-progress-text { font-size: 12px; font-weight: 600; min-width: 35px; text-align: left; }
+.ward-table-progress-bar { flex: 1; height: 6px; background: var(--bg); border-radius: 100px; overflow: hidden; position: relative; }
+.ward-table-progress-fill { height: 100%; background: #10b981; border-radius: 100px; }
+
+.ward-table-delete-btn { padding: 6px 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: background .2s; }
+.ward-table-delete-btn:hover { background: #fca5a5; }
+
+/* --- ريسبونسيف الجوال --- */
+.mobile-cards-wrapper { display: none; padding: 12px; flex-direction: column; gap: 12px; }
+.mobile-ward-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .m-card-row { display: flex; justify-content: space-between; align-items: center; }
-.m-card-date { font-weight: 700; font-size: 13.5px; color: var(--text); }
-.m-card-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12.5px; background: var(--bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
-.m-card-info span { color: var(--text-m); }
+.m-card-date { font-weight: 700; font-size: 13.5px; }
+.m-card-info { background: var(--bg); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.m-card-info div { display: flex; justify-content: space-between; }
+.m-card-info div span { color: var(--text-m); }
 .m-card-progress-row { display: flex; align-items: center; gap: 10px; }
-.m-card-pct { font-size: 12px; font-weight: 700; color: #059669; min-width: 30px; text-align: left; }
+.m-card-pct { font-size: 12px; font-weight: 700; color: #059669; }
+.m-card-footer { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.ward-delete-btn { display: block; padding: 8px; border-radius: 8px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700; border: none; cursor: pointer; }
 
-/* ══ التعديلات الحركية والذكية للهواتف (Responsive Fixes) ══ */
-@media (max-width: 1200px) {
-  .ward-stats { grid-template-columns: repeat(2,1fr); }
-}
-@media (max-width: 1024px) {
+.ward-empty { text-align: center; padding: 40px 20px; color: var(--text-m); }
+.ward-empty span { font-size: 40px; display: block; margin-bottom: 12px; }
+
+@media (max-width: 991px) {
   .ward-layout { grid-template-columns: 1fr; }
+  .ward-stats { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 640px) {
-  /* سحر حماية الجداول على الهاتف */
-  .desktop-table-wrapper { display: none !important; } /* إخفاء الجدول تماماً */
-  .mobile-cards-wrapper { display: block !important; } /* إظهار بطاقات السجلات البديلة */
 
-  .ward-stats { grid-template-columns: 1fr; gap: 10px; }
-  .ward-stat { padding: 14px; }
-  .ward-stat-value { font-size: 1.6rem; }
-  
-  .ward-form-grid { grid-template-columns: 1fr; gap: 12px; }
-  
-  .ward-actions { flex-direction: column; align-items: stretch; gap: 12px; }
-  .ward-action-form, .ward-update-form { width: 100%; display: flex; flex-direction: column; }
-  .ward-update-form input { width: 100%; padding: 12px; font-size: 14px; }
-  .ward-update-form .ward-btn { width: 100%; margin-top: 4px; padding: 12px; }
-  
-  .week-days-container { gap: 4px !important; }
-  .week-day-box { font-size: 11px !important; }
-  
-  .ward-header-content { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
-  .ward-title { font-size: 1.6rem; }
+@media (max-width: 650px) {
+  .ward-stats { grid-template-columns: 1fr; }
+  .desktop-table-wrapper { display: none; }
+  .mobile-cards-wrapper { display: flex; }
+  .ward-header-content { flex-direction: column; align-items: flex-start; }
 }
 </style>
 @endpush

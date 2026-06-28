@@ -330,7 +330,6 @@
         </table>
       </div>
       
-      {{-- 🌟 تم تحديث شريط التنقيل المخصص لحل مشكلة النصوص الإنجليزية بالكامل وتناسق الشكل 🌟 --}}
       <div class="custom-pagination-container">
         <div class="pagination-info">
           عرض السجلات من <b>{{ $allRevisionsLog->firstItem() ?? 0 }}</b> إلى <b>{{ $allRevisionsLog->lastItem() ?? 0 }}</b> (الإجمالي: <b>{{ $allRevisionsLog->total() }}</b> مراجعة)

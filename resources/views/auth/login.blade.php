@@ -14,7 +14,7 @@ body{
   min-height:100vh;
   display:flex;
   background:#f0fdf4;
-  overflow:hidden;
+  overflow-x:hidden; /* يسمح بالتمرير العمودي ويمنع الأفقي */
 }
 
 /* ── الجانب الأيمن — زخرفي ─────────────────── */
@@ -23,7 +23,8 @@ body{
   background:linear-gradient(160deg,#022c22 0%,#064e3b 45%,#0a6647 100%);
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  padding:48px;overflow:hidden;
+  padding:48px;
+  overflow-y:auto; /* تفعيل التمرير الداخلي في حال صغر الشاشة */
 }
 .auth-left-pattern{
   position:absolute;inset:0;opacity:.06;
@@ -111,9 +112,10 @@ body{
   width:480px;flex-shrink:0;
   background:#fff;
   display:flex;flex-direction:column;
-  justify-content:center;
+  justify-content:flex-start; /* تغيير المحاذاة لتبدأ من الأعلى عند ظهور شريط التمرير */
   padding:56px 48px;
-  overflow-y:auto;
+  overflow-y:auto; /* تفعيل التمرير العمودي */
+  max-height: 100vh; /* التأكد من أنه لا يتعدى حجم الشاشة لتفعيل السكرول الداخلي */
 }
 .auth-back-link{
   display:inline-flex;align-items:center;gap:6px;
@@ -229,7 +231,11 @@ body{
 /* ── Responsive ─────────────────────────────── */
 @media(max-width:900px){
   .auth-left{display:none}
-  .auth-right{width:100%;padding:40px 28px}
+  .auth-right{
+    width:100%;
+    padding:40px 28px;
+    max-height: none; /* إلغاء تقييد الارتفاع على الجوال والتلفاز للسماح للمتصفح بعمل سكرول طبيعي */
+  }
 }
 </style>
 </head>
@@ -375,7 +381,9 @@ body{
         نسيت كلمة المرور؟
       </a>
       @endif
+      
     </div>
+    
 
     {{-- زر الدخول --}}
     <button type="submit" class="btn-submit">
@@ -390,10 +398,20 @@ body{
     <p class="auth-register-link">
       ليس لديك حساب؟
       <a href="{{ route('register') }}">سجّل الآن مجاناً</a>
-    </p>
+ 
 
   </form>
-</div>
 
+  {{-- ✨ زر الانتقال السريع لبوابة حسابات البراعم والأطفال ✨ --}}
+  <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px dashed #3b82f6; border-radius: 14px; text-align: center;">
+      <span style="font-size: 22px; display: block; margin-bottom: 4px;">🧒🏼👧🏻</span>
+      <p style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-bottom: 4px;">هل أنت من البراعم أو الأطفال؟</p>
+      <p style="font-size: 11px; color: #2563eb; margin-bottom: 10px;">سجل دخولك بدون بريد أو هاتف باستخدام الـ PIN السري</p>
+      <a href="{{ route('child.login') }}" style="display: inline-block; padding: 8px 20px; font-size: 12.5px; font-weight: 700; color: #fff; background: #2563eb; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">
+          بوابة دخول الأطفال والبراعم ←
+      </a>
+  </div>
+
+</div>
 </body>
 </html>

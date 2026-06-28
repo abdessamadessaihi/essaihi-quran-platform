@@ -18,3 +18,6 @@ Schedule::command('notify:revision-reminders')->dailyAt('07:00');
 
 // تعليم المراجعات المتأخرة — كل يوم منتصف الليل
 Schedule::command('revisions:mark-overdue')->dailyAt('00:00');
+
+// Exécute la commande de nettoyage tous les jours à minuit
+Schedule::command('users:clean-unverified')->daily();
